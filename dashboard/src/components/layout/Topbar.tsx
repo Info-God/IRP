@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, LogOut, Search } from "lucide-react";
+import { Bell, LogOut, Menu, Search } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { ProjectSwitcher } from "@/components/layout/ProjectSwitcher";
 import { useAuth } from "@/context/AuthContext";
@@ -16,7 +16,7 @@ const titleByPath: Record<string, string> = {
   "/settings": "Settings",
 };
 
-export function Topbar() {
+export function Topbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,9 +26,16 @@ export function Topbar() {
     (location.pathname.startsWith("/incidents/") ? "Incident Detail" : "IRP Console");
 
   return (
-    <header className="flex h-14 flex-none items-center justify-between gap-4 border-b border-surface-border bg-surface px-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-sm font-semibold text-slate-100">{title}</h1>
+    <header className="flex h-14 flex-none items-center justify-between gap-4 border-b border-surface-border bg-surface px-4 sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <button
+          onClick={onOpenMobileNav}
+          className="flex-none rounded-md p-1.5 text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 md:hidden"
+          aria-label="Open navigation"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <h1 className="hidden truncate text-sm font-semibold text-slate-100 sm:block">{title}</h1>
         <ProjectSwitcher />
       </div>
 
