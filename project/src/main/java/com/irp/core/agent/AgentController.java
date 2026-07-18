@@ -132,7 +132,7 @@ public class AgentController {
     @PostMapping("/runbooks/search")
     public List<RunbookChunkResponse> searchRunbooks(@AuthenticationPrincipal ApiKeyPrincipal principal,
                                                        @Valid @RequestBody RunbookSearchRequest request) {
-        return runbookService.search(principal.projectId(), request.query(), request.topKOrDefault()).stream()
+        return runbookService.search(principal.organizationId(), principal.projectId(), request.query(), request.topKOrDefault()).stream()
                 .map(RunbookChunkResponse::from)
                 .toList();
     }

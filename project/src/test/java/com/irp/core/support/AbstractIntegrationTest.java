@@ -8,6 +8,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Base class for tests that need the full Spring context against a real PostgreSQL
@@ -20,8 +21,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public abstract class AbstractIntegrationTest {
 
+    /** Must match docker-compose.yml's image: plain postgres has no `vector` extension,
+     * and V6 onward requires it (CREATE EXTENSION vector) - migrations fail without it. */
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine")
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
+            DockerImageName.parse("pgvector/pgvector:pg16").asCompatibleSubstituteFor("postgres"))
             .withDatabaseName("irp")
             .withUsername("irp")
             .withPassword("irp");

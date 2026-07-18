@@ -40,10 +40,16 @@ public class AuditService {
         record(organizationId, null, actor, action, entityType, entityId, Map.of());
     }
 
+    /**
+     * The projectId branch previously queried by projectId alone, with no check that the
+     * project actually belonged to organizationId - any authenticated user from any
+     * organization could read another organization's audit trail by passing its projectId
+     * as a query param. Both branches must filter by organizationId.
+     */
     @Transactional(readOnly = true)
     public Page<AuditLog> list(UUID organizationId, Optional<UUID> projectId, Pageable pageable) {
         return projectId
-                .map(id -> auditLogRepository.findByProjectIdOrderByCreatedAtDesc(id, pageable))
+                .map(id -> auditLogRepository.findByProjectIdAndOrganizationIdOrderByCreatedAtDesc(id, organizationId, pageable))
                 .orElseGet(() -> auditLogRepository.findByOrganizationIdOrderByCreatedAtDesc(organizationId, pageable));
     }
 }

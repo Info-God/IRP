@@ -16,6 +16,7 @@ public record CreateIncidentRequest(
         @Pattern(regexp = "LOW|MEDIUM|HIGH|CRITICAL", message = "severity must be one of LOW, MEDIUM, HIGH, CRITICAL")
         String severity,
 
+        @Size(max = 150)
         String service
 ) {
 }

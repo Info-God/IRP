@@ -50,7 +50,15 @@ public class RunbookService {
                 .toList();
     }
 
-    public List<RunbookChunkStore.RunbookChunkMatch> search(UUID projectId, String query, int topK) {
+    /**
+     * organizationId is validated here, not left to the caller: today the only caller
+     * (AgentController) passes an API-key principal's own projectId, which is already
+     * un-spoofable, but the same tenancy guarantee every other method in this class
+     * provides shouldn't silently depend on that staying true for whichever caller is
+     * added next.
+     */
+    public List<RunbookChunkStore.RunbookChunkMatch> search(UUID organizationId, UUID projectId, String query, int topK) {
+        projectService.getProject(organizationId, projectId);
         float[] queryEmbedding = embeddingClient.embedOne(query);
         return runbookChunkStore.search(projectId, queryEmbedding, topK);
     }
