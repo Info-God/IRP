@@ -37,6 +37,10 @@ irp:
     issuer: irp-core
   apikey:
     prefix: irp_live_
+  ai-service:
+    base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
+    internal-token: ${AI_SERVICE_INTERNAL_TOKEN:dev-only-internal-token-change-me}
+    auto-trigger-enabled: ${AI_SERVICE_AUTO_TRIGGER_ENABLED:true}
 
 management:
   endpoints:

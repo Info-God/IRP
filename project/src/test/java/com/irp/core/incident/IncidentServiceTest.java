@@ -7,8 +7,10 @@ import com.irp.core.tenancy.project.Project;
 import com.irp.core.tenancy.project.ProjectService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -34,6 +36,8 @@ class IncidentServiceTest {
     private ProjectService projectService;
     @Mock
     private AuditService auditService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     private IncidentService incidentService;
 
@@ -42,7 +46,7 @@ class IncidentServiceTest {
 
     @Test
     void createIncidentPersistsIncidentAndOpeningTimelineEntry() {
-        incidentService = new IncidentService(incidentRepository, timelineEntryRepository, projectService, auditService);
+        incidentService = new IncidentService(incidentRepository, timelineEntryRepository, projectService, auditService, eventPublisher);
 
         when(projectService.getProject(organizationId, projectId)).thenReturn(newProject());
         when(incidentRepository.save(any(Incident.class))).thenAnswer(this::simulateGeneratedId);
@@ -57,11 +61,16 @@ class IncidentServiceTest {
                 entry.getEntryType() == TimelineEntryType.CREATED && entry.getActor().equals("ada@acme.dev")));
         verify(auditService).record(eq(organizationId), eq(projectId), eq("ada@acme.dev"),
                 eq("INCIDENT_CREATED"), eq("Incident"), any(), anyMap());
+
+        ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue()).isEqualTo(
+                new IncidentCreatedEvent(created.getId(), projectId, organizationId));
     }
 
     @Test
     void createIncidentRejectsProjectFromAnotherOrganization() {
-        incidentService = new IncidentService(incidentRepository, timelineEntryRepository, projectService, auditService);
+        incidentService = new IncidentService(incidentRepository, timelineEntryRepository, projectService, auditService, eventPublisher);
 
         when(projectService.getProject(organizationId, projectId))
                 .thenThrow(new ResourceNotFoundException("Project", projectId));
@@ -75,7 +84,7 @@ class IncidentServiceTest {
 
     @Test
     void updateStatusToResolvedStampsResolvedAt() {
-        incidentService = new IncidentService(incidentRepository, timelineEntryRepository, projectService, auditService);
+        incidentService = new IncidentService(incidentRepository, timelineEntryRepository, projectService, auditService, eventPublisher);
 
         Incident incident = newIncident();
         incident.setId(UUID.randomUUID());

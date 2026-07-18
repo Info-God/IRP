@@ -6,6 +6,7 @@ import com.irp.core.incident.dto.CreateIncidentRequest;
 import com.irp.core.incident.dto.UpdateIncidentStatusRequest;
 import com.irp.core.tenancy.project.ProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class IncidentService {
     private final IncidentTimelineEntryRepository timelineEntryRepository;
     private final ProjectService projectService;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public Incident createIncident(UUID organizationId, UUID projectId, String actor, CreateIncidentRequest request) {
@@ -38,6 +40,8 @@ public class IncidentService {
 
         auditService.record(organizationId, projectId, actor, "INCIDENT_CREATED", "Incident", incident.getId().toString(),
                 Map.of("severity", incident.getSeverity().name()));
+
+        eventPublisher.publishEvent(new IncidentCreatedEvent(incident.getId(), projectId, organizationId));
 
         return incident;
     }
