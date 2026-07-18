@@ -41,6 +41,11 @@ irp:
     base-url: ${AI_SERVICE_BASE_URL:http://localhost:8000}
     internal-token: ${AI_SERVICE_INTERNAL_TOKEN:dev-only-internal-token-change-me}
     auto-trigger-enabled: ${AI_SERVICE_AUTO_TRIGGER_ENABLED:true}
+  alert-grouping:
+    enabled: ${ALERT_GROUPING_ENABLED:false}
+    threshold-count: ${ALERT_GROUPING_THRESHOLD_COUNT:5}
+    window-minutes: ${ALERT_GROUPING_WINDOW_MINUTES:10}
+    poll-interval-ms: ${ALERT_GROUPING_POLL_INTERVAL_MS:60000}
 
 management:
   endpoints:

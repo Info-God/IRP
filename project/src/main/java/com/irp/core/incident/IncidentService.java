@@ -46,6 +46,28 @@ public class IncidentService {
         return incident;
     }
 
+    /** Used by {@link AlertGroupingJob} for incidents opened automatically from a repeated-error
+     * pattern rather than a human/API request - same side effects (timeline, audit, auto-trigger
+     * event) as {@link #createIncident}, just with a system actor and a stack hash attached so
+     * the job can recognize this cluster is already being tracked on its next run. */
+    @Transactional
+    public Incident createFromAlertGroup(UUID organizationId, UUID projectId, String title, String description,
+                                          String service, String stackHash, long errorCount) {
+        Incident incident = new Incident(projectId, title, description, IncidentSeverity.HIGH, service);
+        incident.setStackHash(stackHash);
+        incident = incidentRepository.save(incident);
+
+        timelineEntryRepository.save(new IncidentTimelineEntry(incident.getId(), "system", TimelineEntryType.CREATED,
+                "Auto-created from %d occurrences of the same error within the alert-grouping window".formatted(errorCount)));
+
+        auditService.record(organizationId, projectId, "system", "INCIDENT_AUTO_CREATED", "Incident", incident.getId().toString(),
+                Map.of("stackHash", stackHash, "errorCount", errorCount));
+
+        eventPublisher.publishEvent(new IncidentCreatedEvent(incident.getId(), projectId, organizationId));
+
+        return incident;
+    }
+
     @Transactional(readOnly = true)
     public Page<Incident> listIncidents(UUID organizationId, UUID projectId, Optional<IncidentStatus> status,
                                          Optional<IncidentSeverity> severity, Pageable pageable) {

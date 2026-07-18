@@ -42,6 +42,10 @@ public class Incident {
     @Column(length = 150)
     private String service;
 
+    /** Set only for incidents auto-created by {@link AlertGroupingJob}; null for manually-created ones. */
+    @Column(name = "stack_hash", length = 64)
+    private String stackHash;
+
     @Column(name = "opened_at", nullable = false)
     private Instant openedAt;
 

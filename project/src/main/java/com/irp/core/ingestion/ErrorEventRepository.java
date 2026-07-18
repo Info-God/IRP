@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public interface ErrorEventRepository extends JpaRepository<ErrorEvent, UUID> {
@@ -21,4 +22,16 @@ public interface ErrorEventRepository extends JpaRepository<ErrorEvent, UUID> {
             """)
     Page<ErrorEvent> search(@Param("projectId") UUID projectId, @Param("from") Instant from, @Param("to") Instant to,
                              @Param("service") String service, @Param("stackHash") String stackHash, Pageable pageable);
+
+    /** Powers the alert-grouping job: every distinct error "shape" seen at least
+     * :threshold times since :windowStart, across all projects in one pass. */
+    @Query("""
+            SELECT new com.irp.core.ingestion.ErrorCluster(
+                e.projectId, e.stackHash, e.service, e.exceptionType, COUNT(e), MAX(e.occurredAt))
+            FROM ErrorEvent e
+            WHERE e.occurredAt >= :windowStart
+            GROUP BY e.projectId, e.stackHash, e.service, e.exceptionType
+            HAVING COUNT(e) >= :threshold
+            """)
+    List<ErrorCluster> findClusters(@Param("windowStart") Instant windowStart, @Param("threshold") long threshold);
 }
