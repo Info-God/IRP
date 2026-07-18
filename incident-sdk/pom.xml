@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    Uses spring-boot-starter-parent purely for consistent dependency/plugin version
+    management across all three modules (Jackson, JUnit, etc.) - it does NOT make
+    incident-sdk-core depend on Spring at runtime. incident-sdk-core's own pom lists
+    only Jackson + SLF4J as compile dependencies, so a plain Java 21 app that isn't
+    using Spring at all can still depend on just that module.
+  -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.3.4</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.irp</groupId>
+  <artifactId>incident-sdk-parent</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>incident-sdk-parent</name>
+  <description>Java SDK and Spring Boot starter for the Agentic AI Incident Response Platform (Phase 2)</description>
+
+  <properties>
+    <java.version>21</java.version>
+  </properties>
+
+  <modules>
+    <module>incident-sdk-core</module>
+    <module>incident-spring-boot-starter</module>
+    <module>incident-sdk-demo-app</module>
+  </modules>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Keeps every module's Jackson/JUnit/etc. versions aligned with the same
+           Spring Boot 3.3.4 line that the Phase 1 backend (irp-core) uses, so the
+           SDK's JSON output is guaranteed compatible with what irp-core expects. -->
+      <dependency>
+        <groupId>com.irp</groupId>
+        <artifactId>incident-sdk-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.irp</groupId>
+        <artifactId>incident-spring-boot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>

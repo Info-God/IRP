@@ -1,0 +1,595 @@
+<title>Agentic AI Incident Response Platform — Project Explainer</title>
+<style>
+:root {
+  --paper: #EEF0F4;
+  --ink: #1A1F2B;
+  --ink-soft: #545F71;
+  --line: #C7CEDA;
+  --accent: #C15B2A;
+  --accent-deep: #8A3D18;
+  --accent-soft: #F3E1D3;
+  --sev-critical: #B23A2E;
+  --sev-warning: #A8792A;
+  --sev-info: #3B6EA5;
+  --sev-ok: #3F7D58;
+  --card: #E4E8EF;
+  --code-bg: #E2E6EE;
+  --font-display: Corbel, "Segoe UI", Calibri, sans-serif;
+  --font-body: Constantia, Georgia, "Times New Roman", serif;
+  --font-mono: Consolas, "Cascadia Code", "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12151C;
+    --ink: #E7EAF0;
+    --ink-soft: #9AA3B5;
+    --line: #2A3140;
+    --accent: #E58A54;
+    --accent-deep: #F3C7A6;
+    --accent-soft: #2B1D14;
+    --card: #171B24;
+    --code-bg: #1B212C;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #12151C; --ink: #E7EAF0; --ink-soft: #9AA3B5; --line: #2A3140;
+  --accent: #E58A54; --accent-deep: #F3C7A6; --accent-soft: #2B1D14;
+  --card: #171B24; --code-bg: #1B212C;
+}
+:root[data-theme="light"] {
+  --paper: #EEF0F4; --ink: #1A1F2B; --ink-soft: #545F71; --line: #C7CEDA;
+  --accent: #C15B2A; --accent-deep: #8A3D18; --accent-soft: #F3E1D3;
+  --sev-critical: #B23A2E; --sev-warning: #A8792A; --sev-info: #3B6EA5; --sev-ok: #3F7D58;
+  --card: #E4E8EF; --code-bg: #E2E6EE;
+}
+
+* { box-sizing: border-box; }
+html, body { background: var(--paper); }
+body { color: var(--ink); font-family: var(--font-body); font-size: 16.5px; line-height: 1.65; }
+.doc { max-width: 1180px; margin: 0 auto; padding: 0 24px 90px; }
+
+.cover { padding: 60px 0 36px; border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px,4vw,46px); line-height: 1.12; margin: 14px 0 12px; text-wrap: balance; max-width: 20ch; }
+.cover .dek { font-size: 17px; color: var(--ink-soft); max-width: 66ch; margin: 0 0 20px; }
+.cover .meta { display: flex; flex-wrap: wrap; gap: 8px 10px; }
+.tag { font-family: var(--font-mono); font-size: 11.5px; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--line); color: var(--ink-soft); background: var(--card); }
+
+.layout { display: grid; grid-template-columns: 240px 1fr; gap: 46px; align-items: start; }
+.toc { position: sticky; top: 24px; font-size: 13px; border-right: 1px solid var(--line); padding-right: 18px; max-height: calc(100vh - 48px); overflow-y: auto; }
+.toc-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 10px; }
+.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+.toc li { counter-increment: toc; margin-bottom: 2px; }
+.toc a { display: flex; gap: 8px; color: var(--ink-soft); text-decoration: none; padding: 5px 6px; border-radius: 3px; font-family: var(--font-display); line-height: 1.3; }
+.toc a::before { content: counter(toc, decimal-leading-zero); font-family: var(--font-mono); font-size: 11px; color: var(--accent); flex-shrink: 0; padding-top: 1px; }
+.toc a:hover, .toc a.active { color: var(--ink); background: var(--accent-soft); }
+.toc a.active { font-weight: 700; }
+
+main.content { min-width: 0; }
+section.block { padding: 38px 0; border-bottom: 1px solid var(--line); }
+section.block:last-child { border-bottom: none; }
+.block h2 { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin: 0 0 6px; display: flex; align-items: baseline; gap: 12px; text-wrap: balance; }
+.block h2 .num { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+.block .lede { font-family: var(--font-display); color: var(--ink-soft); font-size: 14.5px; margin: 0 0 22px; max-width: 72ch; }
+.block h3 { font-family: var(--font-display); font-size: 15.5px; font-weight: 700; margin: 26px 0 10px; }
+.block h4 { font-family: var(--font-display); font-size: 14px; font-weight: 700; margin: 0 0 4px; color: var(--accent-deep); }
+.block p { max-width: 70ch; margin: 0 0 14px; }
+.block ul, .block ol.plain { max-width: 70ch; margin: 0 0 14px; padding-left: 20px; }
+.block li { margin-bottom: 7px; }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+p code, li code, td code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; }
+
+.jargon { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin: 4px 0 16px; max-width: 70ch; }
+.jargon b { font-family: var(--font-display); color: var(--accent-deep); }
+
+.grid-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(230px,1fr)); gap: 14px; margin: 0 0 18px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+.card h4 { margin: 0 0 6px; }
+.card p { font-size: 13.5px; color: var(--ink-soft); margin: 0; max-width: none; font-family: var(--font-body); }
+
+.scroll-wrap { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 560px; font-family: var(--font-display); }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); background: var(--card); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin: 10px 0 20px; font-family: var(--font-mono); font-size: 12.5px; }
+.flow .step { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; max-width: 220px; }
+.flow .step.hl { border-color: var(--accent); background: var(--accent-soft); }
+.flow .arrow { color: var(--accent); padding: 0 8px; font-size: 14px; }
+
+.ascii { background: var(--ink); color: var(--paper); border-radius: 8px; padding: 20px 24px; font-family: var(--font-mono); font-size: 13px; line-height: 1.9; overflow-x: auto; margin: 0 0 16px; white-space: pre; }
+:root[data-theme="dark"] .ascii, @media (prefers-color-scheme: dark) { }
+.ascii .arrow-down { color: var(--accent); }
+
+.mermaid-block { margin: 0 0 8px; }
+.mermaid-code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto; white-space: pre; margin: 0 0 20px; }
+.mermaid-caption { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 8px; }
+
+.diagram-svg { width: 100%; max-width: 720px; height: auto; margin: 6px 0 18px; }
+
+.persona-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 14px; margin: 0 0 18px; }
+.persona { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; text-align: left; }
+.persona .role { font-family: var(--font-mono); font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+.persona p { font-size: 13.5px; margin: 6px 0 0; color: var(--ink-soft); max-width: none; }
+
+blockquote { margin: 0 0 16px; padding: 12px 18px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; font-size: 14.5px; color: var(--ink); max-width: 68ch; font-family: var(--font-display); }
+
+.demo-step { display: grid; grid-template-columns: 30px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.demo-step:last-child { border-bottom: none; }
+.demo-step .n { font-family: var(--font-mono); color: var(--accent); font-weight: 700; }
+.demo-step p { margin: 0; font-size: 14.5px; }
+
+.pill60 { display: inline-block; font-family: var(--font-mono); font-size: 11px; background: var(--accent); color: var(--paper); padding: 3px 10px; border-radius: 100px; margin-bottom: 12px; }
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); padding: 0 0 16px; }
+  .toc ol { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .toc li { margin: 0; }
+}
+</style>
+
+<div class="doc">
+  <header class="cover">
+    <div class="eyebrow">Final-Year Project · Explainer Document</div>
+    <h1>Agentic AI Incident Response Platform for Cloud Applications</h1>
+    <p class="dek">A plain-English walkthrough of what the project is, why it matters, how it works, and how to explain it — written for a project guide, a reviewer, an interviewer, and a curious beginner all at once.</p>
+    <div class="meta">
+      <span class="tag">Domain: Artificial Intelligence</span>
+      <span class="tag">Sub-domain: Agentic AI · RAG · LLM Apps</span>
+      <span class="tag">Area: AIOps / Incident Response / DevOps Automation</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <div class="toc-label">Contents</div>
+      <ol id="toc-list">
+        <li><a href="#s1">Project overview</a></li>
+        <li><a href="#s2">Problem statement</a></li>
+        <li><a href="#s3">Proposed solution</a></li>
+        <li><a href="#s4">Example: payment failure</a></li>
+        <li><a href="#s5">Example: high latency</a></li>
+        <li><a href="#s6">Who uses this</a></li>
+        <li><a href="#s7">Why it's useful</a></li>
+        <li><a href="#s8">Core features</a></li>
+        <li><a href="#s9">AI concepts used</a></li>
+        <li><a href="#s10">System architecture</a></li>
+        <li><a href="#s11">Workflow diagram</a></li>
+        <li><a href="#s12">Tech stack</a></li>
+        <li><a href="#s13">Module explanation</a></li>
+        <li><a href="#s14">Not a normal CRUD app</a></li>
+        <li><a href="#s15">Demo script</a></li>
+        <li><a href="#s16">60-second interview pitch</a></li>
+        <li><a href="#s17">Future scope</a></li>
+        <li><a href="#s18">Appendix: 5 diagrams</a></li>
+      </ol>
+    </nav>
+
+    <main class="content">
+
+      <section class="block" id="s1">
+        <h2><span class="num">01</span> Project Overview</h2>
+        <p>In plain words: this project is an <b>AI teammate for the on-call engineer</b>. When something breaks in a cloud application — a service crashes, errors spike, checkout stops working — this platform notices it automatically, reads the logs and past history like a human would, figures out a likely cause, and suggests a fix. It never acts on its own for anything risky; a human always clicks "approve" before anything real happens. Every single thing the AI looked at and decided is written down, so nothing is a black box.</p>
+        <p>Underneath, it's a full backend platform (built in Java/Spring Boot) that any company's applications can plug into with a small SDK, plus an AI layer that investigates problems the way a senior engineer would: check the logs, check what changed recently, check the documentation, check if this happened before.</p>
+      </section>
+
+      <section class="block" id="s2">
+        <h2><span class="num">02</span> Problem Statement</h2>
+        <p>Modern cloud applications produce a huge amount of data all the time — logs, error traces, performance metrics, deployment records, alerts. When something goes wrong, an engineer has to manually:</p>
+        <ul>
+          <li>Open a logging tool and search for errors around the time things broke</li>
+          <li>Check a separate dashboard for metrics (CPU, memory, response time)</li>
+          <li>Check the deployment history to see if a recent release caused it</li>
+          <li>Search old tickets or documentation for "has this happened before?"</li>
+          <li>Guess at a root cause, then decide on a fix — often under pressure, at 2 AM</li>
+        </ul>
+        <p>This is slow (minutes to hours of pure investigation before any fix starts), inconsistent (depends on who's on call and how experienced they are), and error-prone (tired humans miss things, or apply the wrong fix and make it worse).</p>
+      </section>
+
+      <section class="block" id="s3">
+        <h2><span class="num">03</span> Proposed Solution</h2>
+        <p>The platform automates the investigation part of incident response while keeping a human in charge of anything risky. It works in four layers:</p>
+        <div class="grid-cards">
+          <div class="card"><h4>1. Always-on ingestion</h4><p>A lightweight SDK inside the application constantly ships logs, errors, and deployment events to the platform — so the data is already there the moment something breaks.</p></div>
+          <div class="card"><h4>2. Automatic detection</h4><p>The platform watches this stream and opens an "incident" the moment something looks wrong — e.g. a sudden spike in errors right after a deployment.</p></div>
+          <div class="card"><h4>3. AI investigation (agent + RAG)</h4><p>An AI agent reads the relevant logs, searches company runbooks and past incidents for similar problems (this searching is called RAG — explained in §9), and writes a root-cause hypothesis with a suggested fix.</p></div>
+          <div class="card"><h4>4. Approval-gated automation</h4><p>Safe actions (like sending a Slack alert) can happen automatically. Anything risky (like rolling back a deployment) is only a <i>suggestion</i> until a human clicks approve — and every decision, human or AI, is permanently logged.</p></div>
+        </div>
+        <p>The result: instead of an engineer starting from zero, they start from an AI-written case file — "here's probably what broke, here's why I think so, here's what I recommend" — and they just have to say yes or no.</p>
+      </section>
+
+      <section class="block" id="s4">
+        <h2><span class="num">04</span> Simple Real-Time Example: Payment Service Failure</h2>
+        <p class="lede">Scenario: an e-commerce app deploys a new version of its payment service, and it starts throwing errors.</p>
+        <div class="demo-step"><div class="n">1</div><p><b>Error happens.</b> The payment service starts throwing <code>NullPointerException</code> on checkout right after a deploy.</p></div>
+        <div class="demo-step"><div class="n">2</div><p><b>SDK sends logs.</b> The Java SDK already running inside the payment service ships these error logs to the platform in real time — no manual step needed.</p></div>
+        <div class="demo-step"><div class="n">3</div><p><b>Incident is created.</b> The platform notices the error rate jumped right after a new deployment and automatically opens an incident: "Payment service throwing NPEs after deploy v1.4.2."</p></div>
+        <div class="demo-step"><div class="n">4</div><p><b>AI checks logs, deployment history, and runbooks.</b> The AI agent pulls the exact error stack trace, sees the deployment that happened 2 minutes earlier, and searches the company's runbooks and past incidents for anything similar.</p></div>
+        <div class="demo-step"><div class="n">5</div><p><b>AI finds a probable root cause.</b> It finds a runbook titled "Null pointer errors after config changes" and notices this deploy changed a config flag — a strong match.</p></div>
+        <div class="demo-step"><div class="n">6</div><p><b>AI suggests a rollback.</b> It proposes: "Roll back to v1.4.1" with its reasoning attached, and flags it as a high-risk action.</p></div>
+        <div class="demo-step"><div class="n">7</div><p><b>Human approves.</b> The on-call engineer reads the AI's reasoning on the dashboard, agrees, and clicks Approve.</p></div>
+        <div class="demo-step"><div class="n">8</div><p><b>System triggers automation.</b> The platform executes the approved rollback action (in this project, a safe simulated rollback — real infrastructure control is a future-scope item).</p></div>
+        <div class="demo-step"><div class="n">9</div><p><b>Audit log and postmortem are created.</b> Every step — the error, the AI's reasoning, the approval, the action, the result — is saved permanently, and a draft postmortem summary is generated automatically.</p></div>
+      </section>
+
+      <section class="block" id="s5">
+        <h2><span class="num">05</span> Another Real-World Example: High Latency in a Food Delivery App</h2>
+        <p class="lede">Scenario: a food delivery app's order service becomes slow during a lunchtime rush — nothing has crashed, but customers are waiting too long.</p>
+        <ul>
+          <li><b>Detection:</b> the platform is also watching performance metrics, not just hard errors. It notices average response time for the order service climbing steadily and crossing a threshold.</li>
+          <li><b>Incident opens automatically:</b> "Order service latency degraded — response time 3x normal during peak load," tagged as MEDIUM severity (it's a slowdown, not a full outage).</li>
+          <li><b>AI investigates:</b> it checks recent traffic volume, recent deployments (none in this case), and resource metrics, and notices the order service's database connection pool usage is maxed out.</li>
+          <li><b>AI's hypothesis:</b> "Order service is likely bottlenecked on database connections during high traffic — no recent code change is the cause."</li>
+          <li><b>AI's suggestion:</b> a MEDIUM-risk action like "increase database connection pool size" or "scale up order-service replicas," each with reasoning attached.</li>
+          <li><b>Engineer response:</b> instead of spending 20 minutes cross-referencing three dashboards, the engineer sees the AI's finding immediately, confirms it makes sense, and approves the scale-up.</li>
+        </ul>
+        <p>This example matters because it shows the platform isn't just "watching for crashes" — it understands degraded performance too, which is often harder for humans to notice quickly.</p>
+      </section>
+
+      <section class="block" id="s6">
+        <h2><span class="num">06</span> Who Will Use This Project?</h2>
+        <div class="persona-row">
+          <div class="persona"><div class="role">Backend Engineers</div><p>Get logs, errors, and deployments automatically tracked without building any of this themselves.</p></div>
+          <div class="persona"><div class="role">DevOps Engineers</div><p>Use the automation and approval workflow to safely respond to infrastructure issues.</p></div>
+          <div class="persona"><div class="role">SRE Teams</div><p>Rely on the AI's investigation to cut down time-to-diagnosis during on-call incidents.</p></div>
+          <div class="persona"><div class="role">Cloud Operations Teams</div><p>Get a single dashboard across every service instead of many disconnected tools.</p></div>
+          <div class="persona"><div class="role">Startups</div><p>Get enterprise-style incident response without hiring a dedicated SRE team first.</p></div>
+        </div>
+      </section>
+
+      <section class="block" id="s7">
+        <h2><span class="num">07</span> Why This Project Is Useful</h2>
+        <ul>
+          <li><b>Faster diagnosis</b> — the AI reads logs and history in seconds, not the 20-40 minutes a human spends context-switching between tools.</li>
+          <li><b>Less manual log-checking</b> — engineers start from a summary, not a raw wall of text.</li>
+          <li><b>AI-assisted root cause analysis</b> — the platform proposes a "why," not just a "what."</li>
+          <li><b>Automation with human safety</b> — nothing risky happens without a person approving it, so speed doesn't come at the cost of control.</li>
+          <li><b>Better documentation</b> — every incident automatically produces a written record and draft postmortem, which teams often skip today because it's tedious.</li>
+          <li><b>Directly relevant to product companies</b> — this is exactly the kind of AIOps / platform engineering problem that backend, DevOps, and SRE teams at real companies work on daily.</li>
+        </ul>
+      </section>
+
+      <section class="block" id="s8">
+        <h2><span class="num">08</span> Core Features</h2>
+        <div class="grid-cards">
+          <div class="card"><h4>Login &amp; Org/Project System</h4><p>Multi-tenant: each company (organization) has its own projects, users, and data, fully isolated from every other company.</p></div>
+          <div class="card"><h4>Java SDK / Spring Boot Starter</h4><p>A drop-in dependency any Java app adds to automatically start shipping logs, errors, and deployment events.</p></div>
+          <div class="card"><h4>Log/Error/Event Ingestion</h4><p>A REST API that receives and stores everything the SDK sends, scoped to the right project.</p></div>
+          <div class="card"><h4>Incident Detection &amp; Grouping</h4><p>Rules that turn "a spike of similar errors" into one tracked Incident instead of hundreds of separate alerts.</p></div>
+          <div class="card"><h4>AI Root Cause Analysis</h4><p>The AI agent's write-up of what most likely caused the incident, with its reasoning shown, not hidden.</p></div>
+          <div class="card"><h4>RAG over Runbooks &amp; Past Incidents</h4><p>The AI searches company documentation and history for anything relevant before answering — see §9.</p></div>
+          <div class="card"><h4>Automation Workflow</h4><p>Defines possible fix-actions (notify, create ticket, rollback) and their risk level.</p></div>
+          <div class="card"><h4>Human Approval</h4><p>Anything above LOW risk needs an explicit human click before it executes.</p></div>
+          <div class="card"><h4>Audit Logs</h4><p>An unchangeable record of every action — who (or which AI) did what, and why.</p></div>
+          <div class="card"><h4>Dashboard</h4><p>The single screen where a human sees incidents, the AI's investigation trail, and pending approvals.</p></div>
+        </div>
+      </section>
+
+      <section class="block" id="s9">
+        <h2><span class="num">09</span> AI Concepts Used</h2>
+        <p class="lede">Each concept explained the moment it's introduced — no assumed background needed.</p>
+        <div class="jargon"><p style="margin:0"><b>LLM (Large Language Model)</b> — the AI model itself (like GPT or Claude). It reads text and writes text back — in this project, it reads logs/context and writes a diagnosis.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Agentic AI</b> — instead of just answering one question, the AI is given a goal ("investigate this incident") and the ability to take multiple steps and use tools on its own to get there, deciding what to check next based on what it already found.</p></div>
+        <div class="jargon"><p style="margin:0"><b>RAG (Retrieval-Augmented Generation)</b> — before answering, the AI first <i>retrieves</i> relevant documents (runbooks, past incidents) and includes them in what it reads, so its answer is grounded in real company knowledge instead of guessing from general training.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Embeddings</b> — a way of turning text into a list of numbers that captures its meaning, so a computer can compare "how similar" two pieces of text are, even if they use different words.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Vector Database</b> — a database built to store embeddings and quickly find the ones that are most similar to a new piece of text. This is what makes RAG's "search by meaning" fast.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Semantic Search</b> — searching by meaning instead of exact keyword matching. Searching "payment crash" can still find a runbook titled "checkout failure" because they mean similar things.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Tool Calling</b> — the AI isn't limited to just talking; it can call real functions, like <code>search_logs()</code> or <code>search_runbooks()</code>, read the result, and decide what to do next based on it.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Multi-Agent Workflow</b> — splitting the work across more than one specialized AI agent (e.g. one that investigates, one that writes the postmortem) instead of one agent trying to do everything.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Guardrails</b> — limits placed on the AI so it can't do unlimited or unsafe things — e.g. a maximum number of steps, a list of allowed tools, and risk classification on every action it proposes.</p></div>
+        <div class="jargon"><p style="margin:0"><b>Human-in-the-Loop</b> — the core safety principle of this project: the AI can investigate and suggest freely, but a human must approve anything that could cause real damage before it happens.</p></div>
+      </section>
+
+      <section class="block" id="s10">
+        <h2><span class="num">10</span> System Architecture</h2>
+        <p>The platform is built as two main pieces: a <b>Core Platform</b> (handles logins, projects, incoming data, and incidents) and an <b>AI Agent Service</b> (handles the investigation). They talk to each other through events, so the AI's work never blocks or slows down the main platform.</p>
+        <div class="ascii">Spring Boot App (customer's service)
+   │  uses
+   ▼
+Java SDK / Spring Boot Starter
+   │  sends logs, errors, deployments
+   ▼
+Ingestion API  (Core Platform)
+   │
+   ▼
+Database + Message Queue  (PostgreSQL + RabbitMQ)
+   │
+   ▼
+Incident Engine  (detects &amp; creates incidents)
+   │
+   ▼
+AI Agent + RAG  (investigates &amp; proposes a fix)
+   │
+   ▼
+Automation + Human Approval  (executes only after a "yes")
+   │
+   ▼
+Dashboard + Audit Logs  (humans see and review everything)</div>
+        <p style="font-size:13px;color:var(--ink-soft)">A cleaner, color-coded version of this diagram is in the <a href="#s18" style="color:var(--accent)">Appendix</a> (Diagram 1), along with ready-to-paste Mermaid code.</p>
+      </section>
+
+      <section class="block" id="s11">
+        <h2><span class="num">11</span> Detailed Workflow Diagram</h2>
+        <p>This is the life of a single incident, start to finish — the same nine steps walked through in the payment-service example in §4, shown as a pipeline:</p>
+        <div class="ascii">Error → Ingest → Detect → Investigate → Suggest → Approve → Execute → Audit → Postmortem</div>
+        <ul>
+          <li><b>Error</b> — something goes wrong in the real application.</li>
+          <li><b>Ingest</b> — the SDK ships the evidence to the platform.</li>
+          <li><b>Detect</b> — the platform recognizes a pattern and opens an incident.</li>
+          <li><b>Investigate</b> — the AI agent reads logs, deployments, and runbooks.</li>
+          <li><b>Suggest</b> — the AI proposes a root cause and an action, with reasoning.</li>
+          <li><b>Approve</b> — a human reviews and decides yes or no.</li>
+          <li><b>Execute</b> — the approved action runs.</li>
+          <li><b>Audit</b> — every step of the above is permanently recorded.</li>
+          <li><b>Postmortem</b> — a written summary of what happened is generated for the team.</li>
+        </ul>
+        <p style="font-size:13px;color:var(--ink-soft)">A polished version of this flow is <a href="#s18" style="color:var(--accent)">Appendix</a> Diagram 2.</p>
+      </section>
+
+      <section class="block" id="s12">
+        <h2><span class="num">12</span> Tech Stack By Category</h2>
+        <div class="scroll-wrap">
+          <table>
+            <thead><tr><th>Category</th><th>Technologies</th></tr></thead>
+            <tbody>
+              <tr><td>Backend</td><td class="mono">Java 21, Spring Boot 3, Spring Security, Spring Data JPA</td></tr>
+              <tr><td>Database</td><td class="mono">PostgreSQL, Flyway (schema migrations)</td></tr>
+              <tr><td>Event Processing</td><td class="mono">RabbitMQ (or Kafka)</td></tr>
+              <tr><td>AI</td><td class="mono">OpenAI API / Claude API, LangGraph or OpenAI Agents SDK, embeddings, vector search</td></tr>
+              <tr><td>Vector Database</td><td class="mono">pgvector (or Qdrant)</td></tr>
+              <tr><td>Frontend</td><td class="mono">React, TypeScript, Tailwind CSS, TanStack Query, Recharts</td></tr>
+              <tr><td>DevOps</td><td class="mono">Docker, Docker Compose, GitHub Actions</td></tr>
+              <tr><td>Cloud</td><td class="mono">AWS ECS/Fargate or Azure Container Apps, S3/Azure Blob, CloudWatch/Azure Monitor</td></tr>
+              <tr><td>Observability</td><td class="mono">OpenTelemetry, Prometheus, Grafana, structured logging</td></tr>
+              <tr><td>Security</td><td class="mono">JWT, API keys, RBAC, audit logs, human approval system</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="block" id="s13">
+        <h2><span class="num">13</span> Module-Wise Explanation</h2>
+        <div class="grid-cards">
+          <div class="card"><h4>Auth Module</h4><p>Handles sign-up/login and issues JWT tokens so dashboard users can securely access their organization's data.</p></div>
+          <div class="card"><h4>Organization/Project Module</h4><p>Keeps every company's data separate. A project usually maps to one real application or service.</p></div>
+          <div class="card"><h4>API Key Module</h4><p>Issues secret keys that the SDK uses to authenticate, so ingestion doesn't need a human login.</p></div>
+          <div class="card"><h4>Ingestion Module</h4><p>Receives and stores logs, errors, and deployment events sent by the SDK.</p></div>
+          <div class="card"><h4>Incident Module</h4><p>Owns the lifecycle of an incident: open, investigating, awaiting approval, resolved.</p></div>
+          <div class="card"><h4>AI Agent Module</h4><p>Runs the investigation: gathers context, retrieves knowledge, reasons, and proposes actions.</p></div>
+          <div class="card"><h4>Knowledge Base Module</h4><p>Stores runbooks and past-incident summaries, chunked and embedded for the AI to search.</p></div>
+          <div class="card"><h4>Automation Module</h4><p>Defines possible actions, their risk level, and executes them once approved.</p></div>
+          <div class="card"><h4>Audit Log Module</h4><p>An append-only record of everything that happened — the platform's memory and evidence trail.</p></div>
+          <div class="card"><h4>Dashboard Module</h4><p>The React frontend where humans see incidents, the AI's reasoning, and approve or reject actions.</p></div>
+        </div>
+      </section>
+
+      <section class="block" id="s14">
+        <h2><span class="num">14</span> What Makes This Different From A Normal Web App?</h2>
+        <p>A typical student "CRUD" project (create-read-update-delete forms over a database) doesn't need to solve any of these:</p>
+        <ul>
+          <li><b>Real-time event ingestion</b> — handling a continuous stream of data from external applications, not just form submissions.</li>
+          <li><b>AI reasoning</b> — the system has to make a judgment call, not just fetch and display rows.</li>
+          <li><b>RAG</b> — combining a live database search with an AI model's answer, correctly and efficiently.</li>
+          <li><b>Tool calling</b> — letting an AI safely and predictably trigger real functions in the codebase.</li>
+          <li><b>Automation with guardrails</b> — building a system that can act, but proving it won't act unsafely.</li>
+          <li><b>Cloud-shaped deployment</b> — designed from day one to run as separate services communicating over events, the way real production systems do.</li>
+          <li><b>System design</b> — multi-tenancy, security boundaries (API keys vs. JWT), and an audit trail are all deliberate architectural decisions, not afterthoughts.</li>
+          <li><b>SDK integration</b> — shipping a reusable library that other developers install into their own projects, not just a single app.</li>
+        </ul>
+      </section>
+
+      <section class="block" id="s15">
+        <h2><span class="num">15</span> Final Demo Story</h2>
+        <p class="lede">A script for a live college presentation, roughly 5–7 minutes.</p>
+        <div class="demo-step"><div class="n">1</div><p>Open the dashboard — show the empty incidents list on a sample e-commerce app already wired with the SDK.</p></div>
+        <div class="demo-step"><div class="n">2</div><p>Trigger a real error in the sample app (e.g. run a script that ships a bad deploy).</p></div>
+        <div class="demo-step"><div class="n">3</div><p>Show the platform detect it live — a new incident appears on the dashboard within seconds.</p></div>
+        <div class="demo-step"><div class="n">4</div><p>Open the incident and show the AI's investigation trail: which logs it looked at, which runbook it matched, its reasoning.</p></div>
+        <div class="demo-step"><div class="n">5</div><p>Show the AI's suggested fix and its risk level.</p></div>
+        <div class="demo-step"><div class="n">6</div><p>Click Approve — show the automation execute.</p></div>
+        <div class="demo-step"><div class="n">7</div><p>Show the audit log entry and the generated postmortem summary for that incident.</p></div>
+        <div class="demo-step"><div class="n">8</div><p>Close with the line: "This system doesn't just alert — it investigates like an engineer would, and only acts once a human agrees."</p></div>
+      </section>
+
+      <section class="block" id="s16">
+        <h2><span class="num">16</span> Interview Explanation (60 Seconds)</h2>
+        <span class="pill60">Say this out loud in ~60 seconds</span>
+        <blockquote>
+          "I built an AI-powered incident response platform for cloud applications. Modern apps generate huge volumes of logs and errors, and engineers spend a lot of time manually digging through tools to find what went wrong. My platform automates that investigation: a Java SDK ships logs and errors from any application, the platform detects incidents automatically, and then an AI agent investigates — it reads the relevant logs, searches company runbooks and past incidents using RAG, and proposes a root cause and a fix. The important part is safety: the AI never executes anything risky on its own — every risky action needs explicit human approval, and every decision, by the AI or the human, is permanently audit-logged. It's built with Spring Boot, PostgreSQL, an event-driven architecture, and an LLM-based agent with tool-calling — so it's a full backend and AI systems project, not just a chatbot wrapper."
+        </blockquote>
+      </section>
+
+      <section class="block" id="s17">
+        <h2><span class="num">17</span> Future Scope</h2>
+        <ul>
+          <li><b>Kubernetes integration</b> — real rollback/scale actions on an actual cluster, not just simulated ones.</li>
+          <li><b>Slack / Jira / GitHub integrations</b> — notify teams and create tickets automatically where they already work.</li>
+          <li><b>Anomaly detection model</b> — a learned model to catch unusual patterns that fixed rules would miss.</li>
+          <li><b>Advanced multi-agent workflow</b> — separate specialist agents (investigator, postmortem writer, cost analyst) collaborating.</li>
+          <li><b>Cost optimization agent</b> — an agent that watches cloud spend and proposes savings the same way it proposes incident fixes.</li>
+          <li><b>Self-healing system</b> — for well-understood, low-risk incident types, allow fully automatic resolution without waiting for approval.</li>
+          <li><b>Enterprise SSO</b> — support company-wide single sign-on for larger organizations.</li>
+        </ul>
+      </section>
+
+      <section class="block" id="s18">
+        <h2><span class="num">18</span> Appendix: Five System Diagrams</h2>
+        <p class="lede">Each diagram below is shown visually and as ready-to-paste <a href="https://mermaid.js.org" style="color:var(--accent)">Mermaid</a> code — paste the code into GitHub, Notion, or the <a href="https://mermaid.live" style="color:var(--accent)">Mermaid Live Editor</a> to get an editable, rendered version for your report or slides.</p>
+
+        <h3>Diagram 1 — High-Level Architecture</h3>
+        <p><b>In simple words:</b> data flows in one direction, top to bottom. The customer's app uses the SDK to send data in; the platform stores and processes it; the AI investigates; a human approves; and the dashboard shows everything that happened.</p>
+        <div class="flow">
+          <div class="step">Java SDK</div><div class="arrow">→</div>
+          <div class="step">Ingestion API</div><div class="arrow">→</div>
+          <div class="step">Database + Queue</div><div class="arrow">→</div>
+          <div class="step">Incident Engine</div><div class="arrow">→</div>
+          <div class="step hl">AI Agent + RAG</div><div class="arrow">→</div>
+          <div class="step">Automation + Approval</div><div class="arrow">→</div>
+          <div class="step">Dashboard + Audit Logs</div>
+        </div>
+        <div class="mermaid-caption">Mermaid code</div>
+        <div class="mermaid-code">flowchart TD
+    SDK[Java SDK / Spring Boot Starter] --> ING[Ingestion API]
+    ING --> DB[(PostgreSQL + Message Queue)]
+    DB --> IE[Incident Engine]
+    IE --> AI[AI Agent + RAG]
+    AI --> AUTO[Automation + Human Approval]
+    AUTO --> DASH[Dashboard + Audit Logs]</div>
+
+        <h3>Diagram 2 — Incident Workflow</h3>
+        <p><b>In simple words:</b> this is the journey of one problem, from the moment it happens to the moment it's fully documented. Nine stages, always in this order.</p>
+        <div class="flow">
+          <div class="step">Error</div><div class="arrow">→</div>
+          <div class="step">Ingest</div><div class="arrow">→</div>
+          <div class="step">Detect</div><div class="arrow">→</div>
+          <div class="step hl">Investigate</div><div class="arrow">→</div>
+          <div class="step hl">Suggest</div><div class="arrow">→</div>
+          <div class="step">Approve</div><div class="arrow">→</div>
+          <div class="step">Execute</div><div class="arrow">→</div>
+          <div class="step">Audit</div><div class="arrow">→</div>
+          <div class="step">Postmortem</div>
+        </div>
+        <div class="mermaid-caption">Mermaid code</div>
+        <div class="mermaid-code">flowchart LR
+    A[Error Occurs] --> B[Ingest]
+    B --> C[Detect]
+    C --> D[Investigate]
+    D --> E[Suggest Fix]
+    E --> F[Human Approves]
+    F --> G[Execute Automation]
+    G --> H[Audit Log]
+    H --> I[Postmortem]</div>
+
+        <h3>Diagram 3 — AI Agent Workflow</h3>
+        <p><b>In simple words:</b> the AI doesn't just answer once — it works in a loop. It can repeatedly call small "tools" (search logs, search runbooks, get metrics) to gather more evidence before it finally writes its conclusion, similar to how a human investigator keeps digging until they're confident.</p>
+        <div class="flow">
+          <div class="step">Incident Created</div><div class="arrow">→</div>
+          <div class="step">Gather Context</div><div class="arrow">→</div>
+          <div class="step">Retrieve (RAG)</div><div class="arrow">→</div>
+          <div class="step hl">Reasoning Loop</div>
+        </div>
+        <div class="flow" style="margin-top:-8px">
+          <div class="step" style="margin-left:52px">↳ search_logs</div>
+          <div class="step">↳ search_runbooks</div>
+          <div class="step">↳ get_metrics_summary</div>
+        </div>
+        <div class="flow">
+          <div class="step hl">Reasoning Loop</div><div class="arrow">→</div>
+          <div class="step">Root Cause + Proposed Actions</div><div class="arrow">→</div>
+          <div class="step">Save Every Step</div>
+        </div>
+        <div class="mermaid-caption">Mermaid code</div>
+        <div class="mermaid-code">flowchart TD
+    T[Incident Created - Trigger] --> C[Gather Context: logs, errors, deployments]
+    C --> R[Retrieve: search runbooks and past incidents]
+    R --> L{LLM Reasoning Loop}
+    L -->|calls tool| S1[search_logs]
+    L -->|calls tool| S2[search_runbooks]
+    L -->|calls tool| S3[get_metrics_summary]
+    S1 --> L
+    S2 --> L
+    S3 --> L
+    L --> O[Produce Output: Root Cause + Proposed Actions]
+    O --> P[Persist AgentRun and AgentStep]</div>
+
+        <h3>Diagram 4 — RAG Workflow</h3>
+        <p><b>In simple words:</b> RAG has two separate moments. First, ahead of time, documents are chopped up and turned into embeddings and stored (<i>ingestion time</i>). Later, when the AI needs an answer, it turns the question into an embedding too and searches for the closest matches (<i>query time</i>) — those matches get added to what the AI reads before it answers.</p>
+        <div class="grid-cards">
+          <div class="card">
+            <h4>Ingestion time (ahead of time)</h4>
+            <div class="flow" style="margin:8px 0 0">
+              <div class="step">Upload Runbook</div><div class="arrow">→</div>
+              <div class="step">Split into Chunks</div><div class="arrow">→</div>
+              <div class="step">Create Embeddings</div><div class="arrow">→</div>
+              <div class="step hl">Vector Database</div>
+            </div>
+          </div>
+          <div class="card">
+            <h4>Query time (during an incident)</h4>
+            <div class="flow" style="margin:8px 0 0">
+              <div class="step">Incident Details</div><div class="arrow">→</div>
+              <div class="step">Embed the Query</div><div class="arrow">→</div>
+              <div class="step hl">Similarity Search</div><div class="arrow">→</div>
+              <div class="step">Inject into AI Prompt</div>
+            </div>
+          </div>
+        </div>
+        <div class="mermaid-caption">Mermaid code</div>
+        <div class="mermaid-code">flowchart TD
+    subgraph Ingestion_Time [Ingestion Time]
+    U[Upload Runbook] --> CH[Split into Chunks]
+    CH --> EM[Create Embeddings]
+    EM --> VDB[(Vector Database)]
+    end
+
+    subgraph Query_Time [Query Time]
+    Q[Incident Details] --> QE[Embed the Query]
+    QE --> SS[Similarity Search in Vector DB]
+    VDB --> SS
+    SS --> INJ[Inject Matching Text into AI Prompt]
+    end</div>
+
+        <h3>Diagram 5 — Module Dependency Diagram</h3>
+        <p><b>In simple words:</b> this shows which modules need which other modules to already exist. Read it bottom-to-top: the Dashboard needs almost everything else; the Audit Log module is used by nearly every other module; the AI Agent module needs both the Incident module and the Knowledge Base module to do its job.</p>
+        <div class="grid-cards" style="grid-template-columns: 1fr;">
+          <div class="card">
+            <div style="display:flex;flex-direction:column;gap:10px;font-family:var(--font-mono);font-size:12.5px">
+              <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="tag" style="background:var(--accent-soft);border-color:var(--accent)">Dashboard Module</span></div>
+              <div style="text-align:center;color:var(--accent)">▲ reads from everything below</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="tag">Automation Module</span><span class="tag">AI Agent Module</span><span class="tag">Audit Log Module</span></div>
+              <div style="text-align:center;color:var(--accent)">▲</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="tag">Incident Module</span><span class="tag">Knowledge Base Module</span></div>
+              <div style="text-align:center;color:var(--accent)">▲</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="tag">Ingestion Module</span><span class="tag">API Key Module</span></div>
+              <div style="text-align:center;color:var(--accent)">▲</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="tag">Organization/Project Module</span></div>
+              <div style="text-align:center;color:var(--accent)">▲</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="tag">Auth Module</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mermaid-caption">Mermaid code</div>
+        <div class="mermaid-code">flowchart TD
+    Auth[Auth Module] --> OrgProj[Organization/Project Module]
+    OrgProj --> ApiKey[API Key Module]
+    OrgProj --> Ingestion[Ingestion Module]
+    ApiKey --> Ingestion
+    Ingestion --> Incident[Incident Module]
+    Incident --> AIAgent[AI Agent Module]
+    KB[Knowledge Base Module] --> AIAgent
+    AIAgent --> Automation[Automation Module]
+    Incident --> Automation
+    Automation --> AuditLog[Audit Log Module]
+    Auth --> AuditLog
+    Incident --> AuditLog
+    Ingestion --> AuditLog
+    Incident --> Dashboard[Dashboard Module]
+    AIAgent --> Dashboard
+    Automation --> Dashboard
+    AuditLog --> Dashboard</div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc-list a'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  if (!('IntersectionObserver' in window)) return;
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      var idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      if (entry.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+  sections.forEach(function (s) { if (s) obs.observe(s); });
+})();
+</script>

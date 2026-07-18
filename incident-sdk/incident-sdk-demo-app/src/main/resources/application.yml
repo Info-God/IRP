@@ -1,0 +1,32 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: incident-sdk-demo-app
+
+incident:
+  enabled: true
+  api-key: ${INCIDENT_API_KEY:changeme}
+  endpoint: ${INCIDENT_ENDPOINT:http://localhost:8080/api/v1/ingest}
+  service-name: incident-sdk-demo-app
+  environment: dev
+  latency-capture:
+    slow-threshold: 0ms   # report every request for demo purposes
+  health:
+    auto-report:
+      enabled: true
+      interval: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.irp.sdk: DEBUG

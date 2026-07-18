@@ -1,0 +1,618 @@
+<title>Phase 2 Design — Java SDK &amp; Spring Boot Starter</title>
+<style>
+:root {
+  --paper: #EEF1EF; --ink: #1B2320; --ink-soft: #4B5750; --line: #C7D2CB;
+  --accent: #1F6F5C; --accent-deep: #143F34; --accent-soft: #DCEAE4;
+  --sev-critical: #B23A2E; --sev-warning: #A8792A; --sev-info: #3B6EA5; --sev-ok: #3F7D58;
+  --code-bg: #1B2320; --code-ink: #DCE7E1; --card: #F7F9F7;
+  --font-display: Georgia, "Times New Roman", ui-serif, serif;
+  --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #101512; --ink: #E7ECE9; --ink-soft: #9FACA5; --line: #263A31;
+    --accent: #3FA98A; --accent-deep: #8FE0C5; --accent-soft: #16261F;
+    --code-bg: #0B0F0D; --code-ink: #D6E5DE; --card: #141A17;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #101512; --ink: #E7ECE9; --ink-soft: #9FACA5; --line: #263A31;
+  --accent: #3FA98A; --accent-deep: #8FE0C5; --accent-soft: #16261F;
+  --code-bg: #0B0F0D; --code-ink: #D6E5DE; --card: #141A17;
+}
+:root[data-theme="light"] {
+  --paper: #EEF1EF; --ink: #1B2320; --ink-soft: #4B5750; --line: #C7D2CB;
+  --accent: #1F6F5C; --accent-deep: #143F34; --accent-soft: #DCEAE4;
+  --sev-critical: #B23A2E; --sev-warning: #A8792A; --sev-info: #3B6EA5; --sev-ok: #3F7D58;
+  --code-bg: #1B2320; --code-ink: #DCE7E1; --card: #F7F9F7;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--paper); }
+body { color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.6; }
+.doc { max-width: 1180px; margin: 0 auto; padding: 0 24px 80px; }
+.cover { padding: 56px 0 36px; border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(28px,4vw,44px); line-height: 1.1; margin: 14px 0 12px; text-wrap: balance; max-width: 22ch; }
+.cover .dek { font-size: 16.5px; color: var(--ink-soft); max-width: 66ch; margin: 0 0 18px; }
+.cover .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { font-family: var(--font-mono); font-size: 11.5px; padding: 4px 10px; border-radius: 100px; border: 1px solid var(--line); color: var(--ink-soft); background: var(--card); }
+.layout { display: grid; grid-template-columns: 230px 1fr; gap: 46px; align-items: start; }
+.toc { position: sticky; top: 24px; font-size: 13px; border-right: 1px solid var(--line); padding-right: 18px; max-height: calc(100vh - 48px); overflow-y: auto; }
+.toc-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 10px; }
+.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+.toc li { counter-increment: toc; margin-bottom: 2px; }
+.toc a { display: flex; gap: 8px; color: var(--ink-soft); text-decoration: none; padding: 5px 6px; border-radius: 3px; line-height: 1.35; }
+.toc a::before { content: counter(toc, decimal-leading-zero); font-family: var(--font-mono); font-size: 11px; color: var(--accent); flex-shrink: 0; padding-top: 1px; }
+.toc a:hover, .toc a.active { color: var(--ink); background: var(--accent-soft); }
+.toc a.active { font-weight: 600; }
+main.content { min-width: 0; }
+section.block { padding: 36px 0; border-bottom: 1px solid var(--line); }
+section.block:last-child { border-bottom: none; }
+.block h2 { font-family: var(--font-display); font-size: 25px; font-weight: 700; margin: 0 0 6px; display: flex; align-items: baseline; gap: 12px; text-wrap: balance; }
+.block h2 .num { font-family: var(--font-mono); font-size: 13px; color: var(--accent); font-weight: 500; }
+.block .lede { color: var(--ink-soft); font-size: 14px; margin: 0 0 20px; max-width: 72ch; }
+.block h3 { font-size: 14.5px; font-weight: 700; margin: 22px 0 8px; }
+.block p { max-width: 72ch; margin: 0 0 13px; }
+.block ul, .block ol.plain { max-width: 72ch; margin: 0 0 13px; padding-left: 20px; }
+.block li { margin-bottom: 6px; }
+code, .mono { font-family: var(--font-mono); font-size: .88em; }
+p code, li code, td code { background: var(--card); border: 1px solid var(--line); padding: 1px 5px; border-radius: 3px; }
+pre.code { background: var(--code-bg); color: var(--code-ink); border-radius: 8px; padding: 16px 18px; overflow-x: auto; font-family: var(--font-mono); font-size: 12.3px; line-height: 1.6; margin: 0 0 18px; }
+pre.code .cm { color: #7C9186; font-style: italic; }
+.file-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em; color: var(--accent); text-transform: none; margin: 0 0 6px; display: block; }
+.scroll-wrap { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.3px; min-width: 520px; }
+th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { font-family: var(--font-mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-soft); background: var(--card); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: none; }
+.grid-cards { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 14px; margin: 0 0 18px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 15px 17px; }
+.card h4 { margin: 0 0 6px; font-size: 13.5px; }
+.card p { font-size: 13px; color: var(--ink-soft); margin: 0; max-width: none; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0; margin: 10px 0 18px; font-family: var(--font-mono); font-size: 12.3px; }
+.flow .step { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 7px 11px; max-width: 210px; }
+.flow .arrow { color: var(--accent); padding: 0 7px; font-size: 14px; }
+.tree { font-family: var(--font-mono); font-size: 12.5px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; white-space: pre; overflow-x: auto; margin: 0 0 18px; line-height: 1.7; }
+blockquote { margin: 0 0 16px; padding: 10px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; font-size: 13.5px; max-width: 68ch; }
+.decision { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 8px; padding: 12px 16px; margin: 0 0 16px; font-size: 13.3px; max-width: 72ch; }
+.decision b { color: var(--accent-deep); }
+.week-row { display: grid; grid-template-columns: 34px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.week-row:last-child { border-bottom: none; }
+.week-num { font-family: var(--font-mono); color: var(--accent); font-weight: 700; font-size: 13px; }
+.week-row b { display: block; font-size: 13.8px; margin-bottom: 2px; }
+.week-row p { font-size: 13.3px; color: var(--ink-soft); margin: 0; max-width: 68ch; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); padding: 0 0 16px; }
+  .toc ol { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .toc li { margin: 0; }
+}
+</style>
+
+<div class="doc">
+  <header class="cover">
+    <div class="eyebrow">Build Blueprint · Phase 2 Design</div>
+    <h1>Java SDK &amp; Spring Boot Starter</h1>
+    <p class="dek">How a developer's Spring Boot app talks to the platform: one dependency, four explicit methods, two automatic captures, and a design that can never slow down or crash the host application — even when the platform is unreachable.</p>
+    <div class="meta">
+      <span class="tag">Follows: Phase 1 — Backend Foundation</span>
+      <span class="tag">Modules: irp-client-core + irp-spring-boot-starter</span>
+      <span class="tag">Java 21</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc">
+      <div class="toc-label">Contents</div>
+      <ol id="toc-list">
+        <li><a href="#s1">SDK architecture</a></li>
+        <li><a href="#s2">Spring Boot starter design</a></li>
+        <li><a href="#s3">Auto-configuration approach</a></li>
+        <li><a href="#s4">Configuration properties</a></li>
+        <li><a href="#s5">Main client class</a></li>
+        <li><a href="#s6">Event model</a></li>
+        <li><a href="#s7">Async sending design</a></li>
+        <li><a href="#s8">Retry design</a></li>
+        <li><a href="#s9">Example usage</a></li>
+        <li><a href="#s10">Folder/package structure</a></li>
+        <li><a href="#s11">Implementation steps</a></li>
+      </ol>
+    </nav>
+
+    <main class="content">
+
+      <section class="block" id="s1">
+        <h2><span class="num">01</span> SDK architecture</h2>
+        <p class="lede">One governing rule shapes every decision below: <b>the SDK must never be able to slow down, block, or crash the host application</b> — not on a slow network, not when the platform is down, not under load. Everything else is in service of that.</p>
+        <div class="flow">
+          <div class="step">Your code<br><span class="mono" style="color:var(--ink-soft)">captureException() etc.</span></div><div class="arrow">→</div>
+          <div class="step">IrpClient<br><span class="mono" style="color:var(--ink-soft)">builds an event</span></div><div class="arrow">→</div>
+          <div class="step">EventDispatcher<br><span class="mono" style="color:var(--ink-soft)">bounded queue</span></div><div class="arrow">→</div>
+          <div class="step">Worker thread<br><span class="mono" style="color:var(--ink-soft)">batches + retries</span></div><div class="arrow">→</div>
+          <div class="step">HttpTransport<br><span class="mono" style="color:var(--ink-soft)">POST /api/v1/ingest/*</span></div>
+        </div>
+        <p>Four layers, each independently testable:</p>
+        <ul>
+          <li><b>Public API</b> — <code>IrpClient</code>, the only thing application code touches. Every method returns immediately.</li>
+          <li><b>Event model</b> — plain immutable records that mirror the Phase 1 ingestion DTOs, so the mapping to HTTP payloads is mechanical, not creative.</li>
+          <li><b>Async dispatch</b> — a bounded in-memory queue plus one background worker thread that batches events and sends them off the caller's thread entirely.</li>
+          <li><b>HTTP transport + retry</b> — a small wrapper over <code>java.net.http.HttpClient</code> (no extra HTTP library dependency to drag into every consumer's classpath) with backoff on transient failures.</li>
+        </ul>
+        <p>Two Maven modules, not one, because not every consumer is Spring: <code>irp-client-core</code> has zero Spring dependencies and works in any Java 21 app; <code>irp-spring-boot-starter</code> depends on core and adds the Spring-specific glue (auto-configuration, the latency filter, the exception resolver).</p>
+      </section>
+
+      <section class="block" id="s2">
+        <h2><span class="num">02</span> Spring Boot starter design</h2>
+        <p>The starter's whole job is to turn "add one dependency" into a fully working, auto-wired <code>IrpClient</code> plus two automatic capture mechanisms, with every piece overridable and disableable. It follows the same shape as any real observability starter (Sentry, Datadog): one <code>@AutoConfiguration</code> class, one <code>@ConfigurationProperties</code> record, and small focused beans behind <code>@ConditionalOnProperty</code>/<code>@ConditionalOnMissingBean</code> guards.</p>
+        <div class="grid-cards">
+          <div class="card"><h4>IrpClient bean</h4><p>Always registered if <code>irp.api-key</code> is set. Consumers can define their own bean of the same type to fully override it.</p></div>
+          <div class="card"><h4>Latency capture filter</h4><p>Only registered in a servlet web application, and only if <code>irp.latency-capture.enabled</code> (default true).</p></div>
+          <div class="card"><h4>Exception capture resolver</h4><p>Only registered in a servlet web app, only if <code>irp.error-capture.enabled</code> (default true). Never swallows the exception.</p></div>
+          <div class="card"><h4>Health reporter</h4><p>Optional scheduled heartbeat calling <code>sendHealthStatus()</code>, off by default — <code>irp.health.auto-report.enabled</code>.</p></div>
+        </div>
+      </section>
+
+      <section class="block" id="s3">
+        <h2><span class="num">03</span> Auto-configuration approach</h2>
+        <p>Spring Boot 3 dropped the old <code>spring.factories</code> mechanism in favor of an explicit imports file — using it (not the deprecated path) is itself a small signal of currency worth having in a portfolio project.</p>
+        <span class="file-label">irp-spring-boot-starter/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</span>
+        <pre class="code">com.irp.sdk.spring.autoconfigure.IrpAutoConfiguration</pre>
+        <span class="file-label">IrpAutoConfiguration.java</span>
+        <pre class="code"><span class="cm">// Core config: registers the client itself. Works in ANY app, web or not.</span>
+@AutoConfiguration
+@EnableConfigurationProperties(IrpProperties.class)
+@ConditionalOnProperty(prefix = "irp", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "irp", name = "api-key")
+public class IrpAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    public IrpClient irpClient(IrpProperties properties) {
+        return new DefaultIrpClient(properties);
+    }
+
+    <span class="cm">// Nested so it only activates inside a servlet web app - a batch job
+    // or CLI tool that pulls in the starter should NOT get a Filter registered.</span>
+    @Configuration
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    static class WebConfiguration {
+
+        @Bean
+        @ConditionalOnProperty(prefix = "irp.latency-capture", name = "enabled", havingValue = "true", matchIfMissing = true)
+        public FilterRegistrationBean&lt;IrpLatencyCaptureFilter&gt; irpLatencyFilter(IrpClient client, IrpProperties props) {
+            var registration = new FilterRegistrationBean&lt;&gt;(new IrpLatencyCaptureFilter(client, props));
+            registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 10);
+            return registration;
+        }
+
+        @Bean
+        @ConditionalOnProperty(prefix = "irp.error-capture", name = "enabled", havingValue = "true", matchIfMissing = true)
+        public IrpExceptionCaptureResolver irpExceptionCaptureResolver(IrpClient client) {
+            return new IrpExceptionCaptureResolver(client);
+        }
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "irp.health.auto-report", name = "enabled", havingValue = "true")
+    public IrpHealthReporter irpHealthReporter(IrpClient client, IrpProperties props) {
+        return new IrpHealthReporter(client, props);
+    }
+}</pre>
+        <div class="decision"><b>Design decision:</b> the exception resolver implements <code>HandlerExceptionResolver</code> and always returns <code>null</code> after capturing — that tells Spring "I didn't handle this, keep looking." It reports every exception to the platform without ever interfering with the host app's own <code>@ExceptionHandler</code>s or error pages. An SDK that changes the host app's error responses is an SDK nobody will actually install.</div>
+      </section>
+
+      <section class="block" id="s4">
+        <h2><span class="num">04</span> Configuration properties</h2>
+        <span class="file-label">application.yml — irp.* namespace</span>
+        <div class="scroll-wrap">
+          <table>
+            <thead><tr><th>Property</th><th>Type</th><th>Default</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">irp.enabled</td><td class="mono">boolean</td><td class="mono">true</td><td>Kill switch — disables everything, no beans registered</td></tr>
+              <tr><td class="mono">irp.api-key</td><td class="mono">String</td><td>—</td><td>Project API key (required); sent as <code>X-API-Key</code></td></tr>
+              <tr><td class="mono">irp.base-url</td><td class="mono">String</td><td class="mono">http://localhost:8080</td><td>Platform base URL</td></tr>
+              <tr><td class="mono">irp.service-name</td><td class="mono">String</td><td>—</td><td>Identifies this app in every event (required)</td></tr>
+              <tr><td class="mono">irp.environment</td><td class="mono">String</td><td class="mono">production</td><td>Free-text env tag (dev/staging/production)</td></tr>
+              <tr><td class="mono">irp.connect-timeout</td><td class="mono">Duration</td><td class="mono">2s</td><td>HTTP connect timeout</td></tr>
+              <tr><td class="mono">irp.read-timeout</td><td class="mono">Duration</td><td class="mono">3s</td><td>HTTP read timeout</td></tr>
+              <tr><td class="mono">irp.queue.capacity</td><td class="mono">int</td><td class="mono">2000</td><td>Max events buffered before new ones are dropped</td></tr>
+              <tr><td class="mono">irp.queue.batch-size</td><td class="mono">int</td><td class="mono">50</td><td>Max events per HTTP batch call</td></tr>
+              <tr><td class="mono">irp.queue.flush-interval</td><td class="mono">Duration</td><td class="mono">2s</td><td>Max wait before flushing a partial batch</td></tr>
+              <tr><td class="mono">irp.retry.max-attempts</td><td class="mono">int</td><td class="mono">3</td><td>Retries for a failed batch send</td></tr>
+              <tr><td class="mono">irp.retry.initial-backoff</td><td class="mono">Duration</td><td class="mono">200ms</td><td>First retry delay</td></tr>
+              <tr><td class="mono">irp.retry.max-backoff</td><td class="mono">Duration</td><td class="mono">5s</td><td>Backoff ceiling</td></tr>
+              <tr><td class="mono">irp.latency-capture.enabled</td><td class="mono">boolean</td><td class="mono">true</td><td>Auto-capture every HTTP request's duration</td></tr>
+              <tr><td class="mono">irp.latency-capture.slow-threshold</td><td class="mono">Duration</td><td class="mono">0ms</td><td>Only report requests slower than this (0 = report all)</td></tr>
+              <tr><td class="mono">irp.error-capture.enabled</td><td class="mono">boolean</td><td class="mono">true</td><td>Auto-capture uncaught controller exceptions</td></tr>
+              <tr><td class="mono">irp.health.auto-report.enabled</td><td class="mono">boolean</td><td class="mono">false</td><td>Scheduled heartbeat via <code>sendHealthStatus()</code></td></tr>
+              <tr><td class="mono">irp.health.auto-report.interval</td><td class="mono">Duration</td><td class="mono">60s</td><td>Heartbeat frequency</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <span class="file-label">IrpProperties.java</span>
+        <pre class="code">@ConfigurationProperties(prefix = "irp")
+public record IrpProperties(
+        boolean enabled,
+        String apiKey,
+        String baseUrl,
+        String serviceName,
+        String environment,
+        Duration connectTimeout,
+        Duration readTimeout,
+        Queue queue,
+        Retry retry,
+        LatencyCapture latencyCapture,
+        ErrorCapture errorCapture,
+        Health health
+) {
+    public record Queue(int capacity, int batchSize, Duration flushInterval) {}
+    public record Retry(int maxAttempts, Duration initialBackoff, Duration maxBackoff) {}
+    public record LatencyCapture(boolean enabled, Duration slowThreshold) {}
+    public record ErrorCapture(boolean enabled) {}
+    public record Health(AutoReport autoReport) {
+        public record AutoReport(boolean enabled, Duration interval) {}
+    }
+}</pre>
+      </section>
+
+      <section class="block" id="s5">
+        <h2><span class="num">05</span> Main client class</h2>
+        <span class="file-label">IrpClient.java (public interface — the only thing consumers depend on)</span>
+        <pre class="code">public interface IrpClient {
+    void captureException(Throwable throwable);
+    void captureException(Throwable throwable, Map&lt;String, Object&gt; metadata);
+    void trackEvent(String name, Map&lt;String, Object&gt; metadata);
+    void markDeployment(String version, String commitHash);
+    void sendHealthStatus();
+
+    <span class="cm">/** Flushes any buffered events, waiting up to the given timeout. Call on graceful shutdown. */</span>
+    void flush(Duration timeout);
+}</pre>
+        <span class="file-label">DefaultIrpClient.java</span>
+        <pre class="code">public class DefaultIrpClient implements IrpClient, SmartLifecycle {
+
+    private final IrpProperties properties;
+    private final EventDispatcher dispatcher;
+
+    public DefaultIrpClient(IrpProperties properties) {
+        this.properties = properties;
+        this.dispatcher = new EventDispatcher(properties, new HttpTransport(properties));
+    }
+
+    @Override
+    public void captureException(Throwable throwable) {
+        captureException(throwable, Map.of());
+    }
+
+    @Override
+    public void captureException(Throwable throwable, Map&lt;String, Object&gt; metadata) {
+        dispatcher.enqueue(ErrorEvent.from(throwable, properties.serviceName(), metadata));
+    }
+
+    @Override
+    public void trackEvent(String name, Map&lt;String, Object&gt; metadata) {
+        <span class="cm">// Phase 1's backend has no generic "custom event" endpoint yet - see §6 for
+        // why this is mapped onto the existing log-ingestion path instead of blocking
+        // SDK delivery on a backend change.</span>
+        dispatcher.enqueue(LogEvent.trackEvent(name, properties.serviceName(), metadata));
+    }
+
+    @Override
+    public void markDeployment(String version, String commitHash) {
+        dispatcher.enqueue(DeploymentEvent.of(version, commitHash, properties.serviceName()));
+    }
+
+    @Override
+    public void sendHealthStatus() {
+        dispatcher.enqueue(LogEvent.health(properties.serviceName()));
+    }
+
+    @Override
+    public void flush(Duration timeout) {
+        dispatcher.flush(timeout);
+    }
+
+    <span class="cm">// SmartLifecycle: start the worker thread when the app context is ready,
+    // and flush + stop it cleanly on shutdown instead of dropping in-flight events.</span>
+    @Override public void start() { dispatcher.start(); }
+    @Override public void stop() { dispatcher.stop(properties.readTimeout().multipliedBy(2)); }
+    @Override public boolean isRunning() { return dispatcher.isRunning(); }
+}</pre>
+        <p>Notice every public method does exactly one thing: build an immutable event object and hand it to the dispatcher. There is no I/O, no blocking call, and no exception that can propagate back to the caller from any of these methods — <code>enqueue()</code> is designed to never throw (see §7).</p>
+      </section>
+
+      <section class="block" id="s6">
+        <h2><span class="num">06</span> Event model</h2>
+        <p>The SDK's event types don't map one-to-one onto the four public methods — they map onto what Phase 1's backend can actually ingest today: <code>/api/v1/ingest/logs</code>, <code>/errors</code>, and <code>/deployments</code>. That gap is deliberate and isolated to one place.</p>
+        <div class="decision"><b>Design decision:</b> <code>trackEvent()</code> and <code>sendHealthStatus()</code> currently serialize as <code>LogEvent</code>s (level <code>INFO</code>, with a reserved <code>metadata.__irp_type__</code> marker of <code>TRACK</code> or <code>HEALTH</code>). This means zero backend changes are needed to ship this SDK today. When a later phase adds dedicated <code>/ingest/events</code> and <code>/ingest/health</code> endpoints, only <code>HttpTransport</code>'s routing changes — the public <code>IrpClient</code> API and every line of a consumer's code stays identical. That's the entire reason the event model is a separate layer from the transport layer instead of one class.</div>
+        <span class="file-label">event/EventType.java</span>
+        <pre class="code">public enum EventType { LOG, ERROR, DEPLOYMENT }</pre>
+        <span class="file-label">event/IrpEvent.java — sealed base</span>
+        <pre class="code">public sealed interface IrpEvent permits LogEvent, ErrorEvent, DeploymentEvent {
+    EventType type();
+    Instant occurredAt();
+    String service();
+}</pre>
+        <span class="file-label">event/ErrorEvent.java</span>
+        <pre class="code">public record ErrorEvent(
+        Instant occurredAt, String service, String exceptionType,
+        String message, String stackTrace, Map&lt;String, Object&gt; metadata
+) implements IrpEvent {
+    @Override public EventType type() { return EventType.ERROR; }
+
+    public static ErrorEvent from(Throwable t, String service, Map&lt;String, Object&gt; metadata) {
+        return new ErrorEvent(Instant.now(), service, t.getClass().getName(),
+                t.getMessage(), StackTraceUtils.render(t), metadata);
+    }
+}</pre>
+        <span class="file-label">event/LogEvent.java</span>
+        <pre class="code">public record LogEvent(
+        Instant occurredAt, String service, String level, String message,
+        String traceId, Map&lt;String, Object&gt; metadata
+) implements IrpEvent {
+    @Override public EventType type() { return EventType.LOG; }
+
+    public static LogEvent trackEvent(String name, String service, Map&lt;String, Object&gt; metadata) {
+        Map&lt;String, Object&gt; tagged = new HashMap&lt;&gt;(metadata);
+        tagged.put("__irp_type__", "TRACK");
+        return new LogEvent(Instant.now(), service, "INFO", name, MDC.get("traceId"), tagged);
+    }
+
+    public static LogEvent health(String service) {
+        return new LogEvent(Instant.now(), service, "INFO", "health-check",
+                null, Map.of("__irp_type__", "HEALTH", "status", "UP"));
+    }
+}</pre>
+        <span class="file-label">event/DeploymentEvent.java</span>
+        <pre class="code">public record DeploymentEvent(
+        Instant occurredAt, String service, String version, String status, Map&lt;String, Object&gt; metadata
+) implements IrpEvent {
+    @Override public EventType type() { return EventType.DEPLOYMENT; }
+
+    public static DeploymentEvent of(String version, String commitHash, String service) {
+        <span class="cm">// markDeployment() has no status parameter in the spec - default to SUCCEEDED,
+        // since calling it at all implies the deploy completed. commitHash isn't a
+        // first-class backend column yet, so it rides in metadata.</span>
+        return new DeploymentEvent(Instant.now(), service, version, "SUCCEEDED", Map.of("commitHash", commitHash));
+    }
+}</pre>
+      </section>
+
+      <section class="block" id="s7">
+        <h2><span class="num">07</span> Async sending design</h2>
+        <p>The caller's thread only ever does one cheap, non-blocking thing: <code>queue.offer(event)</code>. Everything expensive happens on a single dedicated background thread.</p>
+        <span class="file-label">transport/EventDispatcher.java</span>
+        <pre class="code">public class EventDispatcher {
+
+    private final BlockingQueue&lt;IrpEvent&gt; queue;
+    private final HttpTransport transport;
+    private final IrpProperties.Queue config;
+    private final ExecutorService worker;
+    private final AtomicLong dropped = new AtomicLong();
+    private volatile boolean running;
+
+    public EventDispatcher(IrpProperties properties, HttpTransport transport) {
+        this.config = properties.queue();
+        this.queue = new ArrayBlockingQueue&lt;&gt;(config.capacity());
+        this.transport = transport;
+        <span class="cm">// Daemon thread: never blocks JVM shutdown on its own.</span>
+        this.worker = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "irp-sdk-dispatcher");
+            t.setDaemon(true);
+            return t;
+        });
+    }
+
+    <span class="cm">/** Never blocks, never throws. Called directly from application/request threads. */</span>
+    public void enqueue(IrpEvent event) {
+        if (!queue.offer(event)) {
+            long total = dropped.incrementAndGet();
+            if (total == 1 || total % 500 == 0) {
+                log.warn("IRP SDK: event queue full ({} capacity) - dropped {} events so far. " +
+                        "The platform may be unreachable or too slow.", config.capacity(), total);
+            }
+        }
+    }
+
+    public void start() {
+        running = true;
+        worker.submit(this::runLoop);
+    }
+
+    private void runLoop() {
+        List&lt;IrpEvent&gt; batch = new ArrayList&lt;&gt;(config.batchSize());
+        while (running || !queue.isEmpty()) {
+            batch.clear();
+            IrpEvent first = poll(config.flushInterval());
+            if (first == null) continue;
+            batch.add(first);
+            queue.drainTo(batch, config.batchSize() - 1);
+            transport.sendWithRetry(batch);
+        }
+    }
+
+    public void flush(Duration timeout) { /* drains queue synchronously, bounded by timeout */ }
+    public void stop(Duration timeout) { running = false; flush(timeout); worker.shutdown(); }
+    public boolean isRunning() { return running; }
+}</pre>
+        <h3>Why a bounded queue and drop-on-full, not an unbounded one</h3>
+        <p>An unbounded queue turns "the platform is briefly slow" into "this app runs out of memory." A bounded queue with drop-and-log is the same trade-off every serious telemetry SDK makes: observability data is allowed to be lossy under extreme conditions; the host application's stability is not allowed to be.</p>
+      </section>
+
+      <section class="block" id="s8">
+        <h2><span class="num">08</span> Retry design</h2>
+        <span class="file-label">transport/HttpTransport.java (retry logic)</span>
+        <pre class="code">void sendWithRetry(List&lt;IrpEvent&gt; batch) {
+    Map&lt;EventType, List&lt;IrpEvent&gt;&gt; byType = batch.stream().collect(groupingBy(IrpEvent::type));
+
+    for (var entry : byType.entrySet()) {
+        String path = endpointFor(entry.getKey());   // logs / errors / deployments
+        int attempt = 0;
+        Duration backoff = retry.initialBackoff();
+
+        while (true) {
+            try {
+                HttpResponse&lt;Void&gt; response = send(path, entry.getValue());
+                if (response.statusCode() &lt; 300) return;
+
+                if (response.statusCode() == 401) {
+                    log.error("IRP SDK: API key rejected (401) - check irp.api-key. Not retrying.");
+                    return; <span class="cm">// will never succeed - don't waste retries</span>
+                }
+                if (response.statusCode() &lt; 500) {
+                    log.warn("IRP SDK: batch rejected ({}), dropping. Not retrying a client error.", response.statusCode());
+                    return;
+                }
+                <span class="cm">// 5xx - transient, worth retrying</span>
+            } catch (IOException | HttpTimeoutException e) {
+                <span class="cm">// network failure - transient, worth retrying</span>
+            }
+
+            attempt++;
+            if (attempt &gt;= retry.maxAttempts()) {
+                log.warn("IRP SDK: giving up on a batch of {} events after {} attempts.", entry.getValue().size(), attempt);
+                return;
+            }
+            sleep(backoff);
+            backoff = min(backoff.multipliedBy(2), retry.maxBackoff())
+                    .plus(Duration.ofMillis(ThreadLocalRandom.current().nextInt(100)));  <span class="cm">// jitter</span>
+        }
+    }
+}</pre>
+        <div class="scroll-wrap">
+          <table>
+            <thead><tr><th>Failure</th><th>Retried?</th><th>Reasoning</th></tr></thead>
+            <tbody>
+              <tr><td>Network error / timeout</td><td>Yes, up to <code>max-attempts</code></td><td>Transient — the platform or network may recover</td></tr>
+              <tr><td>5xx response</td><td>Yes, up to <code>max-attempts</code></td><td>Server-side issue, likely transient</td></tr>
+              <tr><td>401 Unauthorized</td><td>No</td><td>A bad API key will never start working mid-retry-loop</td></tr>
+              <tr><td>4xx (other)</td><td>No</td><td>A malformed request will fail identically every retry</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Backoff is exponential with jitter (<code>initialBackoff × 2^attempt</code>, capped at <code>maxBackoff</code>, plus a small random offset) — the jitter matters once more than one instance of the same service is retrying at once, so they don't all hammer the platform back in perfect unison.</p>
+      </section>
+
+      <section class="block" id="s9">
+        <h2><span class="num">09</span> Example usage in another Spring Boot app</h2>
+        <span class="file-label">pom.xml</span>
+        <pre class="code">&lt;dependency&gt;
+    &lt;groupId&gt;com.irp&lt;/groupId&gt;
+    &lt;artifactId&gt;irp-spring-boot-starter&lt;/artifactId&gt;
+    &lt;version&gt;0.1.0&lt;/version&gt;
+&lt;/dependency&gt;</pre>
+        <span class="file-label">application.yml</span>
+        <pre class="code">irp:
+  api-key: ${IRP_API_KEY}
+  base-url: http://localhost:8080
+  service-name: checkout-service
+  environment: production
+  latency-capture:
+    slow-threshold: 300ms   <span class="cm"># only report requests slower than 300ms</span>
+  health:
+    auto-report:
+      enabled: true
+      interval: 60s</pre>
+        <span class="file-label">CheckoutController.java — everything below is optional; latency + error capture already happen automatically</span>
+        <pre class="code">@RestController
+@RequiredArgsConstructor
+public class CheckoutController {
+
+    private final IrpClient irp;
+    private final CheckoutService checkoutService;
+
+    @PostMapping("/checkout")
+    public CheckoutResponse checkout(@RequestBody CheckoutRequest request) {
+        irp.trackEvent("checkout.started", Map.of("cartSize", request.items().size()));
+
+        try {
+            return checkoutService.process(request);
+        } catch (PaymentDeclinedException e) {
+            <span class="cm">// The starter's exception resolver already reports UNCAUGHT exceptions
+            // automatically. This manual call is only useful because it attaches
+            // extra business context the automatic capture can't know about.</span>
+            irp.captureException(e, Map.of("orderId", request.orderId(), "amount", request.amount()));
+            throw e;
+        }
+    }
+}</pre>
+        <span class="file-label">Called once from a deploy script / CI pipeline, not from application code</span>
+        <pre class="code">irp.markDeployment("v1.4.2", "a3f9c21");</pre>
+        <blockquote>Nothing else is required. The latency filter and exception resolver are already active the moment the dependency is on the classpath and <code>irp.api-key</code> is set — that's the entire point of an auto-configured starter.</blockquote>
+      </section>
+
+      <section class="block" id="s10">
+        <h2><span class="num">10</span> Folder/package structure</h2>
+        <div class="tree">irp-sdk/                                    (parent Maven module)
+├── irp-client-core/                        Plain Java 21, zero Spring deps
+│   └── src/main/java/com/irp/sdk/core/
+│       ├── IrpClient.java
+│       ├── DefaultIrpClient.java
+│       ├── IrpProperties.java
+│       ├── event/
+│       │   ├── EventType.java
+│       │   ├── IrpEvent.java               sealed interface
+│       │   ├── LogEvent.java
+│       │   ├── ErrorEvent.java
+│       │   └── DeploymentEvent.java
+│       ├── transport/
+│       │   ├── EventDispatcher.java        queue + worker thread
+│       │   ├── HttpTransport.java          java.net.http.HttpClient + retry
+│       │   └── RetryPolicy.java
+│       └── util/
+│           └── StackTraceUtils.java
+│
+└── irp-spring-boot-starter/                 Depends on irp-client-core
+    └── src/main/java/com/irp/sdk/spring/
+        ├── autoconfigure/
+        │   └── IrpAutoConfiguration.java
+        ├── web/
+        │   ├── IrpLatencyCaptureFilter.java
+        │   └── IrpExceptionCaptureResolver.java
+        └── health/
+            └── IrpHealthReporter.java
+    └── src/main/resources/META-INF/spring/
+        └── org.springframework.boot.autoconfigure.AutoConfiguration.imports</div>
+        <p>Same split as the core platform's own Phase 1 shape: a plain-Java module that could theoretically be reused outside Spring one day, and a thin Spring-specific shell around it. The starter module has exactly one job — wire beans — and contains no business logic of its own.</p>
+      </section>
+
+      <section class="block" id="s11">
+        <h2><span class="num">11</span> Implementation steps</h2>
+        <div>
+          <div class="week-row"><div class="week-num">1</div><div><b>Scaffold both modules</b><p>Parent POM, two child modules, dependency direction locked (starter → core, never the reverse).</p></div></div>
+          <div class="week-row"><div class="week-num">2</div><div><b>Event model</b><p><code>IrpEvent</code> sealed hierarchy + the three record types, with unit tests for the <code>trackEvent</code>/<code>health</code> → <code>LogEvent</code> mapping decision.</p></div></div>
+          <div class="week-row"><div class="week-num">3</div><div><b>HTTP transport</b><p><code>HttpTransport</code> using <code>java.net.http.HttpClient</code>, mapping each <code>EventType</code> to its ingestion path, with a mock server (e.g. WireMock) in tests.</p></div></div>
+          <div class="week-row"><div class="week-num">4</div><div><b>Async queue + worker</b><p><code>EventDispatcher</code>: bounded queue, batching, drop-on-full with the rate-limited warning log.</p></div></div>
+          <div class="week-row"><div class="week-num">5</div><div><b>Retry policy</b><p>Exponential backoff with jitter; unit test the 401-never-retries and 5xx-does-retry branches explicitly.</p></div></div>
+          <div class="week-row"><div class="week-num">6</div><div><b>IrpClient facade</b><p>Wire dispatcher + transport behind the four public methods plus <code>flush()</code>; implement <code>SmartLifecycle</code> for clean startup/shutdown.</p></div></div>
+          <div class="week-row"><div class="week-num">7</div><div><b>Starter: properties + auto-configuration</b><p><code>IrpProperties</code> record, <code>IrpAutoConfiguration</code>, the <code>AutoConfiguration.imports</code> file.</p></div></div>
+          <div class="week-row"><div class="week-num">8</div><div><b>Latency capture filter</b><p><code>IrpLatencyCaptureFilter</code> as a <code>OncePerRequestFilter</code>; respect <code>slow-threshold</code>.</p></div></div>
+          <div class="week-row"><div class="week-num">9</div><div><b>Exception capture resolver</b><p><code>IrpExceptionCaptureResolver</code>; verify it never changes the host app's actual error response in a test app with its own <code>@ExceptionHandler</code>.</p></div></div>
+          <div class="week-row"><div class="week-num">10</div><div><b>Sample app + manual verification</b><p>A throwaway Spring Boot app depending on the starter via <code>mvn install</code> to the local repo — this is also the demo app for Phase 1's original demo script.</p></div></div>
+          <div class="week-row"><div class="week-num">11</div><div><b>Graceful shutdown test</b><p>Confirm events queued right before shutdown are actually flushed, not silently dropped, within the bounded timeout.</p></div></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var links = Array.prototype.slice.call(document.querySelectorAll('#toc-list a'));
+  var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+  if (!('IntersectionObserver' in window)) return;
+  var obs = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      var idx = sections.indexOf(entry.target);
+      if (idx === -1) return;
+      if (entry.isIntersecting) {
+        links.forEach(function (l) { l.classList.remove('active'); });
+        links[idx].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+  sections.forEach(function (s) { if (s) obs.observe(s); });
+})();
+</script>

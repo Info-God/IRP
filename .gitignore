@@ -1,0 +1,35 @@
+# Build outputs
+target/
+dist/
+build/
+*.class
+
+# Java / Maven
+project/tools/
+*.jar
+!**/lib/*.jar
+
+# Python
+**/__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

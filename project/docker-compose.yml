@@ -1,0 +1,22 @@
+services:
+  postgres:
+    # pgvector/pgvector:pg16 is the official postgres:16 image plus the pgvector extension
+    # pre-installed - needed from V6 onward (CREATE EXTENSION vector for runbook embeddings).
+    image: pgvector/pgvector:pg16
+    container_name: irp-postgres
+    environment:
+      POSTGRES_DB: irp
+      POSTGRES_USER: irp
+      POSTGRES_PASSWORD: irp
+    ports:
+      - "5432:5432"
+    volumes:
+      - irp-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U irp -d irp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  irp-postgres-data:

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.irp</groupId>
+    <artifactId>incident-sdk-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>incident-spring-boot-starter</artifactId>
+  <name>incident-spring-boot-starter</name>
+  <description>Auto-configures IncidentClient and automatic error/latency capture for Spring Boot 3 applications</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.irp</groupId>
+      <artifactId>incident-sdk-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- provided: the consuming application brings its own Spring Boot version;
+         we only compile against the API, we don't want to force a version on them. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- "provided" already puts spring-boot-starter-web/actuator on this module's
+         OWN test classpath, so no separate test-scoped duplicate is needed - only
+         the test-only Spring Boot test slice itself is added here. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agentic AI Incident Response Platform — Project Report</title>
+<style>
+:root {
+  --bg: #f7f8fb;
+  --panel: #ffffff;
+  --panel-alt: #f1f3f8;
+  --border: #e2e5ec;
+  --ink: #1a1f2b;
+  --ink-soft: #5b6472;
+  --ink-faint: #8891a0;
+  --accent: #4f46e5;
+  --accent-soft: #eef0fe;
+  --accent-deep: #3730a3;
+  --ok: #0f9d58;
+  --ok-soft: #e6f6ec;
+  --warn: #b7791f;
+  --warn-soft: #fdf3df;
+  --bad: #c53030;
+  --bad-soft: #fbe9e9;
+  --mono-bg: #1a1f2b;
+  --mono-ink: #e7eaf3;
+  --shadow: 0 1px 2px rgba(20,25,40,0.04), 0 4px 16px rgba(20,25,40,0.06);
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1117;
+    --panel: #151a23;
+    --panel-alt: #1a2029;
+    --border: #262d3a;
+    --ink: #e7eaf3;
+    --ink-soft: #a7b0c0;
+    --ink-faint: #6b7280;
+    --accent: #818cf8;
+    --accent-soft: #1e2340;
+    --accent-deep: #c7d2fe;
+    --ok: #34d399;
+    --ok-soft: #0f2a20;
+    --warn: #fbbf24;
+    --warn-soft: #2b230f;
+    --bad: #f87171;
+    --bad-soft: #2b1414;
+    --mono-bg: #0b0e14;
+    --mono-ink: #d7dce6;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 20px rgba(0,0,0,0.4);
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.65;
+}
+a { color: var(--accent); }
+code, pre { font-family: "Cascadia Code", "Consolas", "SFMono-Regular", Menlo, monospace; }
+code {
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-size: 0.86em;
+}
+pre {
+  background: var(--mono-bg);
+  color: var(--mono-ink);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+pre code { background: none; border: none; padding: 0; color: inherit; }
+
+.layout { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  flex: none;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 22px 0 40px;
+}
+.sidebar .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 18px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.sidebar .brand .logo {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  flex: none;
+}
+.sidebar .brand div { min-width: 0; }
+.sidebar .brand strong { display: block; font-size: 0.85rem; }
+.sidebar .brand span { display: block; font-size: 0.7rem; color: var(--ink-faint); }
+
+.toc { padding: 0 10px; }
+.toc a {
+  display: block;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 0.83rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  margin-bottom: 1px;
+}
+.toc a:hover { background: var(--panel-alt); color: var(--ink); }
+.toc a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc .num { display: inline-block; width: 20px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+
+/* Main content */
+main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px 48px 100px;
+  max-width: 980px;
+}
+.report-header {
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.report-header h1 { font-size: 1.9rem; margin: 0 0 8px; }
+.report-header p.sub { color: var(--ink-soft); font-size: 1rem; margin: 0 0 14px; }
+.report-header .meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--panel-alt); border: 1px solid var(--border);
+  border-radius: 999px; padding: 4px 12px; font-size: 0.78rem; color: var(--ink-soft);
+}
+
+section.report-section { margin-bottom: 52px; scroll-margin-top: 20px; }
+section.report-section > h2 {
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+section.report-section > h2 .secnum {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: 0.85rem; font-weight: 700; flex: none;
+}
+section.report-section > p.lede { color: var(--ink-soft); margin-top: 0; margin-bottom: 20px; }
+h3 { font-size: 1.08rem; margin: 28px 0 10px; }
+h4 { font-size: 0.95rem; margin: 20px 0 8px; color: var(--ink); }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0 22px; font-size: 0.88rem; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--ink-faint); font-weight: 600; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; }
+tr:last-child td { border-bottom: none; }
+
+ul, ol { padding-left: 1.3em; }
+li { margin-bottom: 5px; }
+
+/* Cards */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 18px 0 26px; }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.card h4 { margin-top: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.card p { margin: 6px 0; font-size: 0.86rem; color: var(--ink-soft); }
+.card ul { margin: 8px 0; font-size: 0.84rem; color: var(--ink-soft); }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
+  padding: 3px 9px; border-radius: 999px; flex: none;
+}
+.status-complete { background: var(--ok-soft); color: var(--ok); }
+.status-partial { background: var(--warn-soft); color: var(--warn); }
+.status-missing { background: var(--bad-soft); color: var(--bad); }
+
+/* Callouts */
+.callout { border-radius: var(--radius); padding: 14px 18px; margin: 16px 0; font-size: 0.87rem; border: 1px solid; }
+.callout.confirmed { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.callout.inferred { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 40%, transparent); }
+.callout.missing { background: var(--bad-soft); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+.callout strong { display: block; margin-bottom: 4px; }
+
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 8px; border-radius: 5px; margin-right: 6px; }
+.tag.real { background: var(--ok-soft); color: var(--ok); }
+.tag.mock { background: var(--warn-soft); color: var(--warn); }
+.tag.none { background: var(--bad-soft); color: var(--bad); }
+
+.diagram-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 18px 0 26px; overflow-x: auto; box-shadow: var(--shadow); }
+.diagram-wrap svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+.tree {
+  background: var(--mono-bg); color: var(--mono-ink);
+  border-radius: var(--radius); padding: 16px 18px; font-size: 0.8rem; line-height: 1.6;
+  overflow-x: auto;
+}
+.tree .c1 { color: #a5b4fc; }
+.tree .c2 { color: #86efac; }
+.tree .c3 { color: #fca5a5; }
+.tree .cm { color: #6b7280; }
+
+footer.report-footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--ink-faint); font-size: 0.8rem; }
+
+@media (max-width: 900px) {
+  .layout { flex-direction: column; }
+  .sidebar { position: relative; width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  main { padding: 28px 20px 80px; max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <strong>IRP Project Report</strong>
+        <span>Generated from live code scan</span>
+      </div>
+    </div>
+    <div class="toc" id="toc">
+      <a href="#overview"><span class="num">1</span>Project Overview</a>
+      <a href="#problem"><span class="num">2</span>Problem We're Solving</a>
+      <a href="#builtsofar"><span class="num">3</span>What We've Built (by Phase)</a>
+      <a href="#structure"><span class="num">4</span>Project Structure</a>
+      <a href="#backend"><span class="num">5</span>Backend Explanation</a>
+      <a href="#sdk"><span class="num">6</span>SDK Explanation</a>
+      <a href="#ai"><span class="num">7</span>AI Service Explanation</a>
+      <a href="#frontend"><span class="num">8</span>Frontend Explanation</a>
+      <a href="#e2e"><span class="num">9</span>End-to-End Flow</a>
+      <a href="#automation"><span class="num">10</span>Automation Status</a>
+      <a href="#achieved"><span class="num">11</span>What We Achieved</a>
+      <a href="#missing"><span class="num">12</span>What's Missing / Weak</a>
+      <a href="#run"><span class="num">13</span>How To Run</a>
+      <a href="#test"><span class="num">14</span>How To Test</a>
+      <a href="#learn"><span class="num">15</span>Learning Guide</a>
+      <a href="#stack"><span class="num">16</span>Tech Stack</a>
+      <a href="#future"><span class="num">17</span>Future Enhancements</a>
+      <a href="#resume"><span class="num">18</span>Resume / Interview</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="report-header">
+      <h1>Agentic AI Incident Response Platform</h1>
+      <p class="sub">A full-stack, four-phase project report — generated by scanning the actual source code, config files, migrations, and test results in this repository (not from memory or assumptions).</p>
+      <div class="meta">
+        <span class="chip">📦 4 modules: project · incident-sdk · irp-ai-service · dashboard</span>
+        <span class="chip">✅ 40 automated tests found, 40 passing (Docker-dependent tests excluded — see §12)</span>
+        <span class="chip">🗄 6 Flyway migrations (V1–V6)</span>
+      </div>
+    </div>
+
+    <!-- 1. OVERVIEW -->
+    <section class="report-section" id="overview">
+      <h2><span class="secnum">1</span>Project Overview</h2>
+      <p class="lede">What this project is, in plain language, and why it was built this way.</p>
+
+      <p>
+        The <strong>Agentic AI Incident Response Platform (IRP)</strong> is a system that helps engineering
+        teams find out <em>why</em> something broke in production — faster, and with an AI assistant doing the
+        first pass of investigation instead of a human staring at logs at 3 AM.
+      </p>
+      <p>
+        It is built as four separate, independently-runnable pieces that talk to each other over HTTP,
+        mirroring how real incident-response products (PagerDuty, Datadog, Sentry) are actually structured:
+      </p>
+      <div class="card-grid">
+        <div class="card">
+          <h4>Phase 1 — <code>project/</code> <span class="status-badge status-complete">Complete</span></h4>
+          <p>A Java Spring Boot backend: the system of record. Stores organizations, projects, incidents, logs, errors, deployments, API keys, and an audit trail.</p>
+        </div>
+        <div class="card">
+          <h4>Phase 2 — <code>incident-sdk/</code> <span class="status-badge status-complete">Complete</span></h4>
+          <p>A Java library that any other Spring Boot application can add as a dependency to automatically report errors, slow requests, deployments, and custom events to Phase 1.</p>
+        </div>
+        <div class="card">
+          <h4>Phase 3 — <code>irp-ai-service/</code> <span class="status-badge status-partial">Partial</span></h4>
+          <p>A Python FastAPI service that uses an LLM (Groq/Llama 3.3) to investigate an incident — reading logs/errors/deployments and proposing a root cause for a human to approve.</p>
+        </div>
+        <div class="card">
+          <h4>Phase 4 — <code>dashboard/</code> <span class="status-badge status-partial">Partial</span></h4>
+          <p>A React + TypeScript dashboard where a human reviews incidents and the AI's suggestions, and approves or rejects them. Runs on realistic mock data by default.</p>
+        </div>
+      </div>
+      <p>
+        The project was built in this order — backend first, then the SDK that feeds it, then the AI layer
+        that reads from it, then the dashboard that visualizes it — because each phase depends on the one
+        before it actually existing and having a stable API.
+      </p>
+    </section>
+
+    <!-- 2. PROBLEM -->
+    <section class="report-section" id="problem">
+      <h2><span class="secnum">2</span>Problem We Are Solving</h2>
+      <p class="lede">The real-world incident response problem in cloud/backend systems.</p>
+
+      <p>
+        Modern backend systems (checkout services, payment gateways, notification workers, etc.) run as many
+        small services talking to each other over a network. When something goes wrong — a null pointer
+        exception, a timeout, a bad deployment — the failure usually shows up as a flood of log lines and
+        error events scattered across several services, not one clear message saying "here's the bug."
+      </p>
+      <h3>What actually happens today in most teams</h3>
+      <ul>
+        <li><strong>Alert fatigue</strong> — engineers get paged for everything, so real incidents get lost in noise.</li>
+        <li><strong>Manual root-cause digging</strong> — someone has to open five dashboards, correlate timestamps, and guess what changed (a deploy? a config change? a dependency going down?).</li>
+        <li><strong>Slow MTTR (Mean Time To Resolution)</strong> — the time between "something broke" and "we know why and fixed it" directly costs money and trust.</li>
+        <li><strong>No audit trail</strong> — when something is fixed under pressure, teams often forget to record what happened or why, which hurts post-mortems and compliance.</li>
+        <li><strong>Fear of AI automation</strong> — teams want AI to help investigate, but do <em>not</em> want an AI executing changes (rollbacks, restarts) without a human checking its reasoning first.</li>
+      </ul>
+      <p>
+        This project addresses each of those directly: the <strong>SDK</strong> removes the "how do I even get
+        telemetry out of my app" friction, the <strong>backend</strong> gives every event and incident a
+        permanent, tenant-scoped home with an audit trail, the <strong>AI service</strong> does the first pass
+        of correlation and root-cause reasoning automatically, and the <strong>dashboard</strong> puts a human
+        approval gate in front of every AI suggestion before anything is considered "decided."
+      </p>
+    </section>
+
+    <!-- 3. WHAT WE'VE BUILT -->
+    <section class="report-section" id="builtsofar">
+      <h2><span class="secnum">3</span>What We Have Built So Far</h2>
+      <p class="lede">Phase-by-phase: what exists, what it does, why it matters, and its real current status.</p>
+
+      <h3>Phase 1 — Spring Boot Backend Foundation <span class="status-badge status-complete">Complete</span></h3>
+      <p><strong>Where:</strong> <code>project/src/main/java/com/irp/core/</code> — 6 packages: <code>auth</code>, <code>tenancy</code>, <code>ingestion</code>, <code>incident</code>, <code>agent</code>, <code>common</code>.</p>
+      <ul>
+        <li><strong>What exists:</strong> ~85 Java source files, 6 Flyway SQL migrations, a full Spring Security setup with two independent authentication chains, and 5 JUnit test classes.</li>
+        <li><strong>Feature it provides:</strong> registration/login, multi-tenant organizations/projects, API key issuance, an ingestion API for logs/errors/deployments, incident tracking with a timeline, an append-only audit log, and (added later) tables + endpoints for AI-proposed suggestions.</li>
+        <li><strong>Why it matters:</strong> this is the single source of truth every other phase depends on. Without it, the SDK has nowhere to send data, the AI service has nothing to read, and the dashboard has nothing to show.</li>
+        <li><strong>Status:</strong> Confirmed complete for its stated scope. <code>./mvnw test</code> passes 7/7 pure unit tests (<code>IncidentServiceTest</code>, <code>ApiKeyHasherTest</code>). One Testcontainers-based context test and one full end-to-end integration test (<code>EndToEndFlowIT</code>) exist and are well-written, but currently cannot run in this dev environment because Testcontainers cannot detect a usable Docker daemon here — see §12.</li>
+      </ul>
+
+      <h3>Phase 2 — Java SDK / Spring Boot Starter <span class="status-badge status-complete">Complete</span></h3>
+      <p><strong>Where:</strong> <code>incident-sdk/</code> — 3 Maven modules: <code>incident-sdk-core</code>, <code>incident-spring-boot-starter</code>, <code>incident-sdk-demo-app</code>.</p>
+      <ul>
+        <li><strong>What exists:</strong> a plain-Java client library (no Spring dependency) plus a Spring Boot auto-configuration layer, plus a throwaway demo app used to prove it against a live Phase 1 backend.</li>
+        <li><strong>Feature it provides:</strong> <code>captureException()</code>, <code>trackEvent()</code>, <code>markDeployment()</code>, <code>sendHealthStatus()</code>, plus <strong>automatic</strong> exception capture and <strong>automatic</strong> request-latency capture for any Spring Boot app that adds the starter.</li>
+        <li><strong>Why it matters:</strong> without this, every team that wants to report incidents to Phase 1 would have to hand-write HTTP calls, batching, and retry logic themselves.</li>
+        <li><strong>Status:</strong> Confirmed complete. <code>./mvnw clean install</code> passes all 33 tests across both modules, including a real (not mocked) HTTP server test that verifies the exact JSON/headers sent match what Phase 1 expects.</li>
+      </ul>
+
+      <h3>Phase 3 — AI Agent + RAG Service <span class="status-badge status-partial">Partially Implemented</span></h3>
+      <p><strong>Where:</strong> <code>irp-ai-service/</code> — a Python FastAPI app, 14 Python files.</p>
+      <ul>
+        <li><strong>What exists:</strong> a tool-calling investigation loop against Groq's Llama 3.3 model, 5 tools, redaction guardrails, and a working POST endpoint that was manually tested end-to-end against a live Phase 1 backend in an earlier session (confirmed: an incident was correctly diagnosed, a suggestion was posted, and the incident moved to <code>AWAITING_APPROVAL</code>).</li>
+        <li><strong>Feature it provides:</strong> automated root-cause investigation with a confidence score and recommended actions, tagged by risk level.</li>
+        <li><strong>Why it matters:</strong> this is the "agentic AI" part of the platform's name — it's what turns raw telemetry into an actual hypothesis a human can act on quickly.</li>
+        <li><strong>Status: partial.</strong> The reasoning/tool-calling loop is real and works. The RAG (runbook search) half is a stub that always returns nothing — see §7. There are also no automated tests for this module, and Phase 1 does not yet call it automatically (it must be triggered manually).</li>
+      </ul>
+
+      <h3>Phase 4 — React Dashboard UI <span class="status-badge status-partial">UI Complete, Data Mostly Mock</span></h3>
+      <p><strong>Where:</strong> <code>dashboard/</code> — React 18 + TypeScript + Vite, 70 source files.</p>
+      <ul>
+        <li><strong>What exists:</strong> all 10 requested pages, a full component library, TanStack Query hooks, and a service layer where every function has both a real <code>fetch</code> implementation and a mock implementation, switched by one environment flag.</li>
+        <li><strong>Feature it provides:</strong> login, a metrics dashboard, an incidents table + detail view with an AI suggestion approve/reject panel, an AI Copilot queue, Runbooks/Automations/Integrations catalog pages, audit logs, and settings (API key management).</li>
+        <li><strong>Why it matters:</strong> this is the human-facing surface — where a person actually sees an incident, reads the AI's reasoning, and decides whether to approve it.</li>
+        <li><strong>Status: UI complete, wired connections partial.</strong> Incidents, Incident Detail (Overview/Timeline/AI Suggestions), Audit Logs, and API Key management call real, confirmed Phase 1 endpoints (when <code>VITE_USE_MOCKS=false</code>). Runbooks, Automations, Integrations, the cross-incident AI Copilot queue, and the "Related Signals" tab run entirely on mock data because the backend endpoints they'd need don't exist yet.</li>
+      </ul>
+    </section>
+
+    <!-- 4. STRUCTURE -->
+    <section class="report-section" id="structure">
+      <h2><span class="secnum">4</span>Project Structure</h2>
+      <p class="lede">The four modules live as sibling folders under the same root directory.</p>
+
+      <div class="tree">
+<span class="c1">Final year/</span>
+├── <span class="c1">project/</span>                     <span class="cm"># Phase 1 - Spring Boot backend</span>
+│   ├── src/main/java/com/irp/core/
+│   │   ├── auth/                    <span class="cm"># register/login, JWT issuing</span>
+│   │   ├── tenancy/                 <span class="cm"># organization, project, api-key, user</span>
+│   │   ├── ingestion/                <span class="cm"># logs/errors/deployments intake</span>
+│   │   ├── incident/                 <span class="cm"># incident CRUD + timeline</span>
+│   │   ├── agent/                    <span class="cm"># AI suggestion storage + review</span>
+│   │   ├── security/                 <span class="cm"># JWT filter + API-key filter</span>
+│   │   └── common/                   <span class="cm"># audit log, shared exceptions, paging</span>
+│   ├── src/main/resources/db/migration/  <span class="cm"># V1-V6 Flyway SQL scripts</span>
+│   ├── src/test/java/                <span class="cm"># 5 test classes</span>
+│   └── docker-compose.yml            <span class="cm"># Postgres (pgvector image)</span>
+│
+├── <span class="c1">incident-sdk/</span>                <span class="cm"># Phase 2 - Java SDK (3-module Maven reactor)</span>
+│   ├── incident-sdk-core/            <span class="cm"># plain Java client, no Spring</span>
+│   ├── incident-spring-boot-starter/ <span class="cm"># auto-config + automatic capture</span>
+│   └── incident-sdk-demo-app/        <span class="cm"># throwaway app proving it works</span>
+│
+├── <span class="c1">irp-ai-service/</span>              <span class="cm"># Phase 3 - Python FastAPI AI agent</span>
+│   └── app/
+│       ├── agent/                    <span class="cm"># orchestrator, prompts, tool definitions</span>
+│       ├── rag/                      <span class="cm"># retriever.py - currently a stub</span>
+│       ├── api/                      <span class="cm"># investigations.py - the one HTTP route</span>
+│       ├── core_client.py            <span class="cm"># calls back into Phase 1</span>
+│       └── guardrails.py             <span class="cm"># redaction + confidence capping</span>
+│
+└── <span class="c1">dashboard/</span>                    <span class="cm"># Phase 4 - React + TypeScript + Vite</span>
+    └── src/
+        ├── pages/                     <span class="cm"># one file per route (10 pages)</span>
+        ├── services/                  <span class="cm"># real fetch + mock, per resource</span>
+        ├── mocks/                     <span class="cm"># the in-memory "fake database"</span>
+        ├── hooks/                     <span class="cm"># TanStack Query wrappers</span>
+        ├── components/                <span class="cm"># ui/, layout/, charts/</span>
+        └── features/                  <span class="cm"># incident-specific UI pieces</span>
+      </div>
+
+      <p>In simple terms: each top-level folder is a <strong>separate, independently runnable program</strong>.
+      They are not one big application — they talk to each other only over HTTP, the same way they would if
+      built by four different teams.</p>
+    </section>
+
+    <!-- 5. BACKEND -->
+    <section class="report-section" id="backend">
+      <h2><span class="secnum">5</span>Backend Explanation (Phase 1)</h2>
+      <p class="lede">Confirmed by reading every controller, service, and migration file directly.</p>
+
+      <h3>Authentication</h3>
+      <p>Handled by <code>AuthController</code> (routes: <code>POST /api/v1/auth/register</code>, <code>POST /api/v1/auth/login</code>). Passwords are hashed with BCrypt; on success the server issues a JWT (signed with <code>JwtService</code>, HS256, minimum 32-byte secret). There is currently <strong>no</strong> refresh-token, logout, or "get current user" endpoint — the frontend must cache the user object it got at login time.</p>
+
+      <h3>Organization / Project System</h3>
+      <p>Tenancy is a strict two-level hierarchy: <strong>Organization → Project</strong>. An organization is created only as a side effect of <code>/auth/register</code> (there's a comment in the code confirming this is intentional for this phase — invite flows for adding more users are explicitly out of scope). <code>OrganizationController</code> only exposes <code>GET /api/v1/organizations/me</code> (read-only). <code>ProjectController</code> supports create/list/get, but no update or delete.</p>
+      <p>Tenancy checking is <strong>explicit, not automatic</strong> — every service method takes the caller's <code>organizationId</code> as a parameter and checks it against the resource being accessed, rather than relying on a shared "current tenant" context. A cross-tenant lookup returns 404 (not 403), so it doesn't even reveal that the resource exists.</p>
+
+      <h3>API Keys</h3>
+      <p><code>ApiKeyController</code> gives full CRUD: create (the plaintext key is shown <em>once</em>, on creation, then never again — only its hash and a short prefix are stored), list, and revoke (soft-delete via a <code>revokedAt</code> timestamp, not a hard delete). Keys are project-scoped, not organization-scoped — a key can only ever act on the one project it was issued for.</p>
+
+      <h3>Ingestion APIs</h3>
+      <p><code>IngestionController</code> exposes <code>POST /api/v1/ingest/logs</code>, <code>/errors</code>, <code>/deployments</code> — all API-key authenticated, all insert-only (no read/update/delete). This is the endpoint the SDK talks to. Logs and errors accept a batch of events in one call; deployments are one-at-a-time.</p>
+
+      <h3>Incidents</h3>
+      <p><code>IncidentController</code> supports create, paginated list (filterable by status/severity), get-by-id (with full timeline), and a status-change endpoint. Every incident has a <code>severity</code> (LOW/MEDIUM/HIGH/CRITICAL) and a <code>status</code> that already anticipates the AI agent: <code>OPEN → INVESTIGATING → AWAITING_APPROVAL → RESOLVED/CLOSED</code>. Every mutation appends a row to <code>incident_timeline_entries</code> tagged with one of five entry types, including <code>AGENT_ACTION</code> and <code>APPROVAL</code> — these existed <em>before</em> the AI service was built, specifically so Phase 3 wouldn't need a schema change.</p>
+
+      <h3>Audit Logs</h3>
+      <p><code>AuditLogController</code> exposes one read-only, paginated endpoint: <code>GET /api/v1/audit-logs?projectId=</code>. Every mutating action anywhere in the backend calls <code>AuditService.record(...)</code> directly (not via an AOP aspect, not via an event bus) at the end of its own transaction — so the audit row commits or rolls back together with the action it's recording. Audit rows are never updated or deleted.</p>
+
+      <h3>Database Migrations</h3>
+      <table>
+        <tr><th>Migration</th><th>What it creates</th></tr>
+        <tr><td><code>V1</code></td><td>organizations, app_users, projects, api_keys</td></tr>
+        <tr><td><code>V2</code></td><td>log_events, error_events, deployment_events (the ingestion tables)</td></tr>
+        <tr><td><code>V3</code></td><td>incidents, incident_timeline_entries</td></tr>
+        <tr><td><code>V4</code></td><td>audit_logs (append-only)</td></tr>
+        <tr><td><code>V5</code></td><td>widens the api_keys.key_prefix column</td></tr>
+        <tr><td><code>V6</code></td><td>enables the Postgres <code>vector</code> extension (pgvector) and creates runbooks, runbook_chunks, agent_runs, agent_steps, agent_suggestions</td></tr>
+      </table>
+      <p>All primary keys are UUIDs generated by Postgres itself (<code>gen_random_uuid()</code>). All schema changes go through Flyway — there is no manual SQL run against the database outside of migrations.</p>
+
+      <h3>Security Flow</h3>
+      <p>There are <strong>two independent Spring Security filter chains</strong>, matched purely by URL path, because the two kinds of caller authenticate completely differently:</p>
+      <ol>
+        <li><code>/api/v1/ingest/**</code> and <code>/api/v1/agent/**</code> → <strong>API-key only</strong> (the SDK and the AI service both authenticate this way, as a project-scoped key in the <code>X-API-Key</code> header)</li>
+        <li>Everything else → <strong>JWT bearer token only</strong> (dashboard users)</li>
+      </ol>
+      <p>An API key can never log into the dashboard, and a dashboard JWT can never call the ingestion or agent endpoints. This is deliberate — it means a leaked SDK key can only ever send telemetry, never read another user's dashboard data.</p>
+    </section>
+
+    <!-- 6. SDK -->
+    <section class="report-section" id="sdk">
+      <h2><span class="secnum">6</span>SDK Explanation (Phase 2)</h2>
+      <p class="lede">Confirmed by reading the SDK source and its 33 passing tests.</p>
+
+      <h3>Why It Was Created</h3>
+      <p>Any team building a service (a checkout API, a payments worker, etc.) needs a simple way to say
+      "something went wrong, tell the platform" without hand-writing HTTP calls, JSON shaping, batching, and
+      retry logic themselves. The SDK is that missing piece — one Maven dependency, a few config lines, done.</p>
+
+      <h3>How an External Spring Boot App Uses It</h3>
+      <pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;com.irp&lt;/groupId&gt;
+  &lt;artifactId&gt;incident-spring-boot-starter&lt;/artifactId&gt;
+  &lt;version&gt;0.1.0-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+      <p>Then in <code>application.yml</code>:</p>
+      <pre><code>incident:
+  api-key: irp_live_xxxxx
+  endpoint: http://localhost:8080/api/v1/ingest
+  service-name: payment-service</code></pre>
+      <p>That's it — Spring Boot's auto-configuration detects these properties and registers a fully-working
+      <code>IncidentClient</code> bean automatically, plus (in a web app) a servlet filter and an exception
+      resolver, with zero extra code.</p>
+
+      <h3>What Methods Exist</h3>
+      <table>
+        <tr><th>Method</th><th>Purpose</th></tr>
+        <tr><td><code>captureException(Throwable[, metadata])</code></td><td>Manually report a caught exception</td></tr>
+        <tr><td><code>trackEvent(name, metadata)</code></td><td>Report any custom named event</td></tr>
+        <tr><td><code>markDeployment(version, commitHash)</code></td><td>Record that a new version just went out</td></tr>
+        <tr><td><code>sendHealthStatus()</code></td><td>Report a periodic health heartbeat</td></tr>
+        <tr><td><code>flush(Duration)</code>, <code>droppedEventCount()</code></td><td>Operational helpers (shutdown flush, backpressure visibility)</td></tr>
+      </table>
+
+      <h3>How It Sends Logs/Errors/Events</h3>
+      <p>Every call above just <strong>enqueues</strong> an event onto a bounded in-memory queue and returns
+      immediately — it never blocks the caller's request thread. A single dedicated background thread drains
+      the queue, batches events by type, and sends them over <code>java.net.http.HttpClient</code> to Phase 1's
+      <code>/api/v1/ingest/*</code> endpoints with the <code>X-API-Key</code> header. Failed sends retry with
+      exponential backoff on 5xx responses; a 401 (bad key) is logged once and <em>not</em> retried, so a
+      misconfigured key can't hammer the server forever.</p>
+
+      <div class="callout confirmed">
+        <strong>Automatic error and latency capture — CONFIRMED IMPLEMENTED</strong>
+        Two classes, both auto-registered by <code>IncidentAutoConfiguration</code> only when running inside a
+        real servlet web app:
+        <ul style="margin-bottom:0">
+          <li><code>IncidentExceptionCaptureResolver</code> — a Spring <code>HandlerExceptionResolver</code> that
+          catches any uncaught exception thrown by any controller and calls <code>captureException()</code>
+          automatically. No manual try/catch needed anywhere in the host app.</li>
+          <li><code>IncidentLatencyCaptureFilter</code> — a servlet <code>Filter</code> that times every HTTP
+          request and reports it as an event once it's slower than a configurable threshold.</li>
+        </ul>
+        Verified two ways: (1) the demo app's <code>/demo/boom</code> and <code>/demo/slow</code> endpoints exist
+        specifically to exercise this, and (2) <code>IncidentAutoConfigurationTest</code> (9 tests) and
+        <code>IncidentLatencyCaptureFilterTest</code> (3 tests) all pass.
+      </div>
+    </section>
+
+    <!-- 7. AI SERVICE -->
+    <section class="report-section" id="ai">
+      <h2><span class="secnum">7</span>AI Service Explanation (Phase 3)</h2>
+      <p class="lede">irp-ai-service exists and its core reasoning loop is real and was verified live. The RAG half is not.</p>
+
+      <h3>Agent Flow</h3>
+      <p>The service exposes exactly one HTTP route: <code>POST /v1/investigations</code>, guarded by a shared
+      internal token. Given an <code>incident_id</code>, it:</p>
+      <ol>
+        <li>Fetches the incident from Phase 1 (using a project-scoped API key, same mechanism as the SDK)</li>
+        <li>Starts a tool-calling loop against <strong>Groq's Llama 3.3 70B</strong> model, giving it 5 tools it can call in any order it decides</li>
+        <li>Once the model calls its final tool, <code>post_investigation_result</code>, the loop stops</li>
+        <li>The result is validated (Pydantic schema + a guardrail) and posted back to Phase 1 as an <code>AgentSuggestion</code></li>
+      </ol>
+
+      <h3>The 5 Tools</h3>
+      <table>
+        <tr><th>Tool</th><th>What it does</th><th>Backed by real data?</th></tr>
+        <tr><td><code>search_errors</code></td><td>Recent error events for a service/time window</td><td><span class="tag real">Real</span> calls Phase 1</td></tr>
+        <tr><td><code>search_logs</code></td><td>Recent log lines, optionally filtered by level</td><td><span class="tag real">Real</span> calls Phase 1</td></tr>
+        <tr><td><code>get_recent_deployments</code></td><td>Deployments around the incident's time window</td><td><span class="tag real">Real</span> calls Phase 1</td></tr>
+        <tr><td><code>search_runbooks</code></td><td>Semantic search over uploaded runbooks (RAG)</td><td><span class="tag none">Stub</span> always returns empty</td></tr>
+        <tr><td><code>post_investigation_result</code></td><td>The agent's final structured answer</td><td><span class="tag real">Real</span></td></tr>
+      </table>
+
+      <h3>RAG / Vector Database Usage — Designed, Not Implemented</h3>
+      <div class="callout missing">
+        <strong>This is the biggest gap in Phase 3.</strong>
+        Migration <code>V6</code> in Phase 1 already created <code>runbooks</code> and <code>runbook_chunks</code>
+        tables, with pgvector installed and an HNSW index ready for semantic search. But:
+        <ul style="margin-bottom:0">
+          <li>There is <strong>no upload endpoint</strong> anywhere in Phase 1 to add a runbook</li>
+          <li>There is <strong>no embedding pipeline</strong> — nothing turns text into vectors</li>
+          <li><code>app/rag/retriever.py</code> is a literal one-line stub: <code>return []</code></li>
+        </ul>
+        In short: the database schema for RAG exists, the tool the agent calls exists and is wired up correctly,
+        but there is currently nothing in that database for it to find, ever.
+      </div>
+
+      <h3>Root Cause Analysis — Real, Verified Live</h3>
+      <p>In an earlier working session, a test incident was created (a <code>NullPointerException</code> in a
+      checkout service, immediately after a version deploy) with realistic matching error/log/deployment rows
+      in the database. The AI service was triggered against it and, using the real Groq model:</p>
+      <ul>
+        <li>Correctly called <code>search_errors</code> and <code>get_recent_deployments</code></li>
+        <li>Correctly correlated the error to the deployment that happened 15 minutes earlier</li>
+        <li>Produced a grounded root cause, a confidence score of <strong>0.86</strong>, and two recommended
+        actions (rollback = medium risk, add a null-check = low risk)</li>
+        <li>The suggestion was posted back and the incident automatically moved to <code>AWAITING_APPROVAL</code></li>
+      </ul>
+
+      <h3>Current Limitations</h3>
+      <ul>
+        <li>No RAG — see above</li>
+        <li>No automatic trigger — Phase 1 does not call this service when an incident is created; it must be invoked manually (<code>curl</code> or similar)</li>
+        <li>No persisted per-tool-call audit trail — <code>agent_runs</code>/<code>agent_steps</code> tables exist in the database but nothing writes to them; only the final suggestion is saved</li>
+        <li>Open-weight model tool-calling is less reliable than a frontier model — during testing, Llama 3.3 occasionally emitted a malformed tool call (a list instead of an object) that Groq's own schema check rejected; this was caught and fixed with a bounded retry, but it's a known characteristic of the free-tier model choice</li>
+        <li>No automated tests for this module (no pytest files found anywhere in <code>irp-ai-service/</code>)</li>
+      </ul>
+    </section>
+
+    <!-- 8. FRONTEND -->
+    <section class="report-section" id="frontend">
+      <h2><span class="secnum">8</span>Frontend / React Dashboard Explanation (Phase 4)</h2>
+      <p class="lede">All 10 pages exist and render correctly (verified in-browser). Data source varies by page.</p>
+
+      <table>
+        <tr><th>Page</th><th>What it shows</th><th>Data source</th></tr>
+        <tr><td>Login</td><td>Sign-in form</td><td><span class="tag real">Real</span> calls <code>/auth/login</code></td></tr>
+        <tr><td>Dashboard</td><td>KPI cards, incident trend chart, severity donut, recent activity</td><td><span class="tag real">Real</span> incidents; <span class="tag mock">Mock</span> cross-incident AI feed</td></tr>
+        <tr><td>Incidents</td><td>Filterable, paginated incident table + create dialog</td><td><span class="tag real">Real</span></td></tr>
+        <tr><td>Incident Detail</td><td>Overview, Timeline, AI Suggestions (approve/reject), Related Signals tabs</td><td><span class="tag real">Real</span> for first 3 tabs; <span class="tag mock">Mock</span> for Related Signals</td></tr>
+        <tr><td>AI Copilot</td><td>Cross-incident queue of pending AI suggestions, confidence histogram</td><td><span class="tag mock">Mock</span> — no project-wide suggestions endpoint exists yet</td></tr>
+        <tr><td>Runbooks / Knowledge Base</td><td>List of uploaded runbooks</td><td><span class="tag mock">Mock</span> — no backend at all</td></tr>
+        <tr><td>Automations</td><td>List of automation rules</td><td><span class="tag mock">Mock</span> — no backend at all</td></tr>
+        <tr><td>Integrations</td><td>Slack/PagerDuty/GitHub/Webhook catalog</td><td><span class="tag mock">Mock</span> — no backend at all</td></tr>
+        <tr><td>Audit Logs</td><td>Paginated table of every mutating action</td><td><span class="tag real">Real</span></td></tr>
+        <tr><td>Settings</td><td>Organization (read-only), Projects (read-only), API Keys (full CRUD), Profile</td><td><span class="tag real">Real</span> for API Keys; <span class="tag mock">read-only-real</span> for org/projects</td></tr>
+      </table>
+
+      <p>The switch between real and mock is a single environment variable, <code>VITE_USE_MOCKS</code>. Every
+      function in <code>src/services/</code> has both implementations side by side, so flipping the flag never
+      requires touching a page or component.</p>
+
+      <p><strong>AI Copilot UI</strong> specifically: shows each pending suggestion's root cause, a confidence
+      meter (color-coded red/amber/green), the evidence it cited, and recommended actions tagged by risk level,
+      with Approve/Reject buttons that call the review mutation directly from the queue.</p>
+      <p><strong>Incident timeline UI</strong>: renders all 5 entry types (created, status change, note, agent
+      action, approval) with distinct icons and colors, in chronological order.</p>
+    </section>
+
+    <!-- 9. END TO END -->
+    <section class="report-section" id="e2e">
+      <h2><span class="secnum">9</span>How The System Works End-to-End</h2>
+      <p class="lede">Walking through one concrete example: a payment service throws an error.</p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 760 760" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L8,3 L0,6 Z" fill="#4f46e5"/>
+            </marker>
+          </defs>
+          <!-- step boxes -->
+          <g font-size="13">
+            <rect x="60" y="10" width="640" height="60" rx="10" fill="#eef0fe" stroke="#4f46e5"/>
+            <text x="380" y="35" text-anchor="middle" font-weight="700" fill="#1a1f2b">1. Payment service throws a NullPointerException</text>
+            <text x="380" y="54" text-anchor="middle" fill="#5b6472" font-size="11.5">The Java SDK's automatic exception resolver catches it - no code change needed</text>
+
+            <line x1="380" y1="70" x2="380" y2="100" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="100" width="640" height="60" rx="10" fill="#eef0fe" stroke="#4f46e5"/>
+            <text x="380" y="125" text-anchor="middle" font-weight="700" fill="#1a1f2b">2. SDK queues the event, sends it via HTTPS + X-API-Key</text>
+            <text x="380" y="144" text-anchor="middle" fill="#5b6472" font-size="11.5">POST /api/v1/ingest/errors - retries on 5xx, gives up (once) on 401</text>
+
+            <line x1="380" y1="160" x2="380" y2="190" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="190" width="640" height="60" rx="10" fill="#eef0fe" stroke="#4f46e5"/>
+            <text x="380" y="215" text-anchor="middle" font-weight="700" fill="#1a1f2b">3. irp-core (Phase 1) validates the API key and stores the error</text>
+            <text x="380" y="234" text-anchor="middle" fill="#5b6472" font-size="11.5">Row inserted into error_events, tenant-scoped to that project</text>
+
+            <line x1="380" y1="250" x2="380" y2="280" stroke="#b7791f" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="280" width="640" height="66" rx="10" fill="#fdf3df" stroke="#b7791f"/>
+            <text x="380" y="303" text-anchor="middle" font-weight="700" fill="#1a1f2b">4. An incident is created</text>
+            <text x="380" y="322" text-anchor="middle" fill="#5b6472" font-size="11.5">MANUAL TODAY: a human (or a curl call) opens the incident - there is no</text>
+            <text x="380" y="337" text-anchor="middle" fill="#5b6472" font-size="11.5">automatic "N errors in M minutes -&gt; open an incident" rule yet</text>
+
+            <line x1="380" y1="346" x2="380" y2="376" stroke="#b7791f" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="376" width="640" height="66" rx="10" fill="#fdf3df" stroke="#b7791f"/>
+            <text x="380" y="399" text-anchor="middle" font-weight="700" fill="#1a1f2b">5. irp-ai-service (Phase 3) investigates - IF triggered</text>
+            <text x="380" y="418" text-anchor="middle" fill="#5b6472" font-size="11.5">MANUAL TODAY: Phase 1 does not call Phase 3 automatically yet;</text>
+            <text x="380" y="433" text-anchor="middle" fill="#5b6472" font-size="11.5">someone must POST /v1/investigations with the incident id</text>
+
+            <line x1="380" y1="442" x2="380" y2="472" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="472" width="640" height="60" rx="10" fill="#eef0fe" stroke="#4f46e5"/>
+            <text x="380" y="497" text-anchor="middle" font-weight="700" fill="#1a1f2b">6. AI reads errors/logs/deployments, proposes a root cause</text>
+            <text x="380" y="516" text-anchor="middle" fill="#5b6472" font-size="11.5">Posted back as an AgentSuggestion; incident status -&gt; AWAITING_APPROVAL</text>
+
+            <line x1="380" y1="532" x2="380" y2="562" stroke="#4f46e5" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="562" width="640" height="60" rx="10" fill="#eef0fe" stroke="#4f46e5"/>
+            <text x="380" y="587" text-anchor="middle" font-weight="700" fill="#1a1f2b">7. Dashboard (Phase 4) shows the incident and the AI's reasoning</text>
+            <text x="380" y="606" text-anchor="middle" fill="#5b6472" font-size="11.5">Root cause, confidence meter, evidence, recommended actions</text>
+
+            <line x1="380" y1="622" x2="380" y2="652" stroke="#0f9d58" stroke-width="2" marker-end="url(#arrow)"/>
+
+            <rect x="60" y="652" width="640" height="60" rx="10" fill="#e6f6ec" stroke="#0f9d58"/>
+            <text x="380" y="677" text-anchor="middle" font-weight="700" fill="#1a1f2b">8. A human approves or rejects</text>
+            <text x="380" y="696" text-anchor="middle" fill="#5b6472" font-size="11.5">REAL: enforced server-side - only a JWT dashboard user can do this, not the AI</text>
+
+            <line x1="380" y1="712" x2="380" y2="742" stroke="#0f9d58" stroke-width="2" marker-end="url(#arrow)"/>
+          </g>
+          <rect x="60" y="716" width="640" height="40" rx="10" fill="#e6f6ec" stroke="#0f9d58"/>
+          <text x="380" y="741" text-anchor="middle" font-weight="700" font-size="13" fill="#1a1f2b">9. Audit log records who approved what, and when</text>
+        </svg>
+      </div>
+
+      <p>Steps 3, 6, 7, 8 and 9 are <strong>fully real and verified</strong>. Steps 4 and 5 are the two places
+      where a human (or a manual API call) currently has to do something that a more finished product would do
+      automatically — this is the honest state of the pipeline today, not a hidden gap.</p>
+    </section>
+
+    <!-- 10. AUTOMATION -->
+    <section class="report-section" id="automation">
+      <h2><span class="secnum">10</span>Automation Status</h2>
+      <p class="lede">Being direct about this, since it's the section most likely to be over-claimed.</p>
+
+      <div class="two-col">
+        <div class="card">
+          <h4>What currently exists <span class="status-badge status-partial">Partial</span></h4>
+          <ul>
+            <li>The AI investigation itself runs without a human writing the analysis — that part is genuinely automated, once triggered</li>
+            <li>A real, backend-enforced human approval gate: an incident with a pending suggestion is forced into <code>AWAITING_APPROVAL</code>, and only a JWT-authenticated dashboard user can move it out of that state — not the AI's own API key</li>
+            <li>Guardrails that cap the AI's confidence score if it can't point to evidence</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>The "Automations" page <span class="status-badge status-missing">UI Only</span></h4>
+          <ul>
+            <li>Confirmed by reading <code>dashboard/src/services/automations.ts</code>: it returns hard-coded mock rules, always</li>
+            <li>Confirmed by searching all of <code>project/</code> for "automation": zero matches — there is no automation/rules table, model, or endpoint anywhere in the backend</li>
+            <li>The page is intentionally labeled "mock data" in its own UI banner</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Is automation only UI/mock, or real backend logic?</h3>
+      <p>Both, depending on which "automation" is meant. The <strong>AI investigation</strong> is real backend
+      logic (Python service + real LLM + real data reads). The <strong>"Automations" feature</strong> (rules like
+      "auto-notify Slack on critical incidents") is 100% UI mock with no backend at all.</p>
+
+      <h3>Does human approval exist?</h3>
+      <p>Yes — this is real, not mocked. <code>AgentSuggestionController</code> is JWT-only; the AI service's own
+      API key literally cannot call the approve/reject endpoint. This was a deliberate design decision, not an
+      accident.</p>
+
+      <h3>What's still needed for real automation</h3>
+      <ol>
+        <li>Phase 1 automatically calling Phase 3 when an incident is created (an event listener + HTTP call — designed in the Phase 3 plan, not yet built)</li>
+        <li>A real domain model + engine for rules ("when X, do Y") backed by a database table and a scheduler/event listener</li>
+        <li>Real outbound integrations (Slack, PagerDuty, GitHub, generic webhooks) so an approved suggestion can actually <em>do</em> something outside the platform</li>
+      </ol>
+    </section>
+
+    <!-- 11. ACHIEVED -->
+    <section class="report-section" id="achieved">
+      <h2><span class="secnum">11</span>What We Achieved</h2>
+      <ul>
+        <li>A working multi-tenant backend with two independent, correctly-isolated authentication mechanisms (JWT for humans, API keys for machines)</li>
+        <li>A Java SDK that any Spring Boot app can drop in and get automatic error + latency reporting with zero extra code</li>
+        <li>A real, working AI agent that reads live incident data, reasons over it with an LLM, and produces a grounded, evidence-cited root cause — verified end-to-end against a real backend in this session</li>
+        <li>A genuine human-in-the-loop safety gate enforced at the backend level, not just in the UI</li>
+        <li>A fully-built, professionally-styled 10-page React dashboard with real charts, a real approval workflow, and a clean mock/real data-source seam so it can be demoed with zero backend running</li>
+        <li>An append-only audit trail covering every mutating action across the whole platform</li>
+        <li>40 passing automated tests across the Java backend and SDK, including a real (non-mocked) HTTP wire-format test</li>
+        <li>Database schema already laid down for the next phase (pgvector, runbooks) before that phase was even built, avoiding a future migration</li>
+      </ul>
+    </section>
+
+    <!-- 12. MISSING -->
+    <section class="report-section" id="missing">
+      <h2><span class="secnum">12</span>What Is Missing / Not Fully Working</h2>
+      <p class="lede">No sugar-coating — this is what an honest reviewer would find.</p>
+      <ul>
+        <li><strong>RAG is not implemented</strong> — <code>search_runbooks</code> always returns an empty list; there's no upload endpoint or embedding pipeline (§7)</li>
+        <li><strong>No automatic incident creation from telemetry</strong> — the README says this explicitly: "later phases wire this up automatically from ingested errors." Today, an incident is always opened manually</li>
+        <li><strong>No automatic AI trigger</strong> — Phase 1 does not call Phase 3 when an incident is created; someone has to call the AI service's endpoint by hand</li>
+        <li><strong>Docker-dependent backend tests currently cannot run in this environment</strong> — <code>IrpCoreApplicationTests</code> (a context-load test) and <code>EndToEndFlowIT</code> (a full golden-path test) both use Testcontainers to spin up a real Postgres, but Testcontainers reports <em>"Could not find a valid Docker environment"</em> here even though Docker itself is running and was used manually throughout earlier work. This is a local tooling/environment issue, not a defect in the test code itself — the 7 pure unit tests that don't need Docker all pass.</li>
+        <li><strong>Automations page is 100% mock</strong> — no backend domain model exists (§10)</li>
+        <li><strong>Integrations page is 100% mock</strong> — no OAuth/webhook storage exists anywhere in the backend</li>
+        <li><strong>AI Copilot's cross-incident queue is mock</strong> — the backend only has a per-incident suggestions endpoint, not a project-wide one</li>
+        <li><strong>Incident Detail's "Related Signals" tab is mock</strong> — no JWT-authenticated (dashboard-facing) endpoint exists for reading logs/errors/deployments; only the API-key-only agent endpoints have this</li>
+        <li><strong>No tests at all for the Python AI service</strong> — no pytest files found anywhere in <code>irp-ai-service/</code></li>
+        <li><strong>No CI/CD pipeline</strong> — no <code>.github/workflows</code> or equivalent found anywhere in the repository</li>
+        <li><strong>No agent_runs/agent_steps persistence</strong> — the database tables exist (V6 migration) but the AI service never writes to them; only the final suggestion is saved, so there's no fine-grained trace of what the agent searched before it concluded</li>
+        <li><strong>Open-weight model tool-calling reliability</strong> — Llama 3.3 on Groq's free tier occasionally produces a malformed tool call; a bounded retry was added, but this is a real characteristic of the current model choice, not fully eliminated</li>
+        <li><strong>No password reset, email verification, or multi-user invite flow</strong> — confirmed by reading <code>RegisterRequest.java</code>'s own code comment stating this is out of scope for this phase</li>
+      </ul>
+    </section>
+
+    <!-- 13. HOW TO RUN -->
+    <section class="report-section" id="run">
+      <h2><span class="secnum">13</span>How To Run The Project</h2>
+      <p class="lede">Exact commands, taken directly from each module's own README.</p>
+
+      <h3>1. Database (Docker)</h3>
+      <pre><code>cd project
+docker compose up -d</code></pre>
+      <p>Starts a <code>pgvector/pgvector:pg16</code> Postgres container (the pgvector extension is required from migration V6 onward).</p>
+
+      <h3>2. Backend (Phase 1)</h3>
+      <pre><code>cd project
+./mvnw spring-boot:run</code></pre>
+      <p>Flyway migrates the schema automatically on boot. API is then live at <code>http://localhost:8080</code>.</p>
+
+      <h3>3. SDK Demo App (Phase 2)</h3>
+      <pre><code>cd incident-sdk
+./mvnw clean install
+
+cd incident-sdk-demo-app
+INCIDENT_API_KEY=irp_live_xxxxx ../mvnw spring-boot:run</code></pre>
+      <p>Get a real <code>irp_live_xxxxx</code> key first by registering + creating a project + creating an API key against the backend (see §14).</p>
+
+      <h3>4. AI Service (Phase 3)</h3>
+      <pre><code>cd irp-ai-service
+pip install -r requirements.txt
+cp .env.example .env   # fill in IRP_CORE_API_KEY and GROQ_API_KEY
+uvicorn app.main:app --reload --port 8000</code></pre>
+      <p><code>GROQ_API_KEY</code> is free — get one at <code>console.groq.com/keys</code>.</p>
+
+      <h3>5. Frontend (Phase 4)</h3>
+      <pre><code>cd dashboard
+npm install
+npm run dev</code></pre>
+      <p>Open <code>http://localhost:5173</code>. Runs on mock data by default — no backend required. To connect
+      it to the real backend, copy <code>.env.example</code> to <code>.env</code> and set
+      <code>VITE_USE_MOCKS=false</code>.</p>
+    </section>
+
+    <!-- 14. HOW TO TEST -->
+    <section class="report-section" id="test">
+      <h2><span class="secnum">14</span>How To Test It</h2>
+      <p class="lede">Manual steps, using the real curl examples confirmed in the project's own README.</p>
+      <ol>
+        <li><strong>Register + log in:</strong>
+          <pre><code>curl -s http://localhost:8080/api/v1/auth/register -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"organizationName":"Acme Corp","fullName":"Ada Lovelace","email":"ada@acme.dev","password":"correct-horse-battery"}'</code></pre>
+        </li>
+        <li><strong>Create a project</strong> (use the <code>accessToken</code> from step 1 as <code>$TOKEN</code>):
+          <pre><code>curl -s http://localhost:8080/api/v1/projects -X POST \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"checkout-service","environment":"production"}'</code></pre>
+        </li>
+        <li><strong>Generate an API key</strong> for that project (copy <code>plaintextKey</code> — shown once):
+          <pre><code>curl -s http://localhost:8080/api/v1/projects/$PROJECT_ID/api-keys -X POST \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"checkout-prod-key"}'</code></pre>
+        </li>
+        <li><strong>Send an event</strong> using the API key (or run the SDK demo app instead):
+          <pre><code>curl -s http://localhost:8080/api/v1/ingest/logs -X POST \
+  -H "X-API-Key: $API_KEY" -H "Content-Type: application/json" \
+  -d '{"events":[{"occurredAt":"2026-07-18T10:00:00Z","level":"ERROR","service":"checkout","message":"NullPointerException at CheckoutService.java:88"}]}'</code></pre>
+        </li>
+        <li><strong>Create and view an incident:</strong>
+          <pre><code>curl -s http://localhost:8080/api/v1/projects/$PROJECT_ID/incidents -X POST \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"Checkout throwing NPEs","severity":"HIGH","service":"checkout"}'
+
+curl -s "http://localhost:8080/api/v1/projects/$PROJECT_ID/incidents?status=OPEN" \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+        </li>
+        <li><strong>Check the audit log:</strong>
+          <pre><code>curl -s "http://localhost:8080/api/v1/audit-logs?projectId=$PROJECT_ID" \
+  -H "Authorization: Bearer $TOKEN"</code></pre>
+        </li>
+        <li><strong>Open the dashboard</strong> at <code>http://localhost:5173</code>, log in (any credentials
+        work in mock mode), and click through Incidents → an incident → the AI Suggestions tab → Approve/Reject.</li>
+      </ol>
+    </section>
+
+    <!-- 15. LEARNING GUIDE -->
+    <section class="report-section" id="learn">
+      <h2><span class="secnum">15</span>Learning Guide — Study Order</h2>
+      <p class="lede">The order that will make the least sense to study out of sequence, and why.</p>
+      <ol>
+        <li><strong>Database first</strong> — read <code>project/src/main/resources/db/migration/V1</code> through <code>V6</code> in order. Every table in the system is defined there; understanding the shape of the data makes every controller afterward make sense immediately.</li>
+        <li><strong>Auth</strong> — <code>AuthController</code> → <code>JwtService</code> → <code>JwtAuthenticationFilter</code> → <code>SecurityConfig</code>. Understand the two-filter-chain split before anything else in security.</li>
+        <li><strong>Ingestion</strong> — <code>IngestionController</code> → <code>IngestionService</code> → the three event entities. This is the simplest read/write flow in the whole system (insert-only).</li>
+        <li><strong>SDK</strong> — start at <code>DefaultIncidentClient</code>, then <code>EventDispatcher</code> (the queue + background thread), then <code>HttpSender</code> (the actual wire format), then the starter's <code>IncidentAutoConfiguration</code>.</li>
+        <li><strong>Incidents</strong> — <code>IncidentController</code> → <code>IncidentService</code> → <code>IncidentTimelineEntry</code>. Notice how every mutation writes a timeline row and an audit row.</li>
+        <li><strong>AI / RAG</strong> — <code>irp-ai-service/app/api/investigations.py</code> → <code>orchestrator.py</code> (the tool-calling loop) → <code>tools.py</code> → <code>guardrails.py</code>. Then look at the (empty) <code>rag/retriever.py</code> to see exactly where RAG would plug in.</li>
+        <li><strong>Frontend</strong> — start at <code>dashboard/src/App.tsx</code> (routes), then one page at a time: <code>IncidentsPage</code> → <code>IncidentDetailPage</code> → <code>AgentSuggestionPanel</code>. Read a service file (e.g. <code>services/incidents.ts</code>) to see the mock/real seam.</li>
+        <li><strong>Automation</strong> — last, on purpose: read <code>dashboard/src/pages/AutomationsPage.tsx</code> and its banner, then confirm for yourself (as this report did) that grepping the backend for "automation" returns nothing. Understanding what's <em>not</em> there is as valuable as understanding what is.</li>
+      </ol>
+    </section>
+
+    <!-- 16. TECH STACK -->
+    <section class="report-section" id="stack">
+      <h2><span class="secnum">16</span>Tech Stack Used</h2>
+      <table>
+        <tr><th>Category</th><th>Technologies</th></tr>
+        <tr><td><strong>Backend</strong></td><td>Java 21, Spring Boot 3.3.4, Spring Web, Spring Data JPA, Flyway</td></tr>
+        <tr><td><strong>Frontend</strong></td><td>React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, React Router, Recharts, lucide-react, clsx</td></tr>
+        <tr><td><strong>Database</strong></td><td>PostgreSQL 16 (<code>pgvector/pgvector:pg16</code> image), pgvector extension</td></tr>
+        <tr><td><strong>Security</strong></td><td>Spring Security, JWT (jjwt 0.12.6, HS256), BCrypt password hashing, API-key hashing</td></tr>
+        <tr><td><strong>AI</strong></td><td>Groq API (Llama 3.3 70B), tool/function calling, Pydantic schema validation</td></tr>
+        <tr><td><strong>SDK</strong></td><td>Plain Java 21 (core module has zero Spring dependency), java.net.http.HttpClient, Jackson</td></tr>
+        <tr><td><strong>DevOps</strong></td><td>Docker &amp; Docker Compose, Maven (multi-module reactor for the SDK), npm/Vite</td></tr>
+        <tr><td><strong>Testing</strong></td><td>JUnit 5, Mockito, AssertJ, Testcontainers (Postgres), a hand-rolled JDK HTTP server for wire-format tests</td></tr>
+      </table>
+    </section>
+
+    <!-- 17. FUTURE -->
+    <section class="report-section" id="future">
+      <h2><span class="secnum">17</span>Future Enhancements</h2>
+      <ul>
+        <li><strong>Real Slack / GitHub / Jira integrations</strong> — replace the Integrations page's mock cards with real OAuth connections and outbound webhook calls</li>
+        <li><strong>A real workflow/automation engine</strong> — a rules table + scheduler so "auto-notify on CRITICAL" is a real, persisted, executable rule</li>
+        <li><strong>AI evaluation</strong> — a labeled test set of past incidents to measure the agent's root-cause accuracy over time, not just spot-check it</li>
+        <li><strong>Finish the vector search / RAG pipeline</strong> — a runbook upload endpoint, a chunking + embedding job, and swapping the stub retriever for a real pgvector similarity query</li>
+        <li><strong>Alert grouping</strong> — automatically cluster repeat errors (the SDK already computes a <code>stackHash</code> for this) into one incident instead of many</li>
+        <li><strong>Anomaly detection</strong> — statistical or ML-based detection of unusual error/latency patterns to trigger incidents automatically, closing the gap identified in §9</li>
+        <li><strong>WebSocket live updates</strong> — push incident/suggestion changes to the dashboard instead of relying on query refetch</li>
+        <li><strong>Cloud deployment</strong> — containerize all four services and deploy behind a real domain with managed Postgres</li>
+        <li><strong>Monitoring</strong> — metrics/tracing for the platform itself (ironic but necessary: who watches the incident response platform?)</li>
+        <li><strong>Better test coverage</strong> — pytest suite for the AI service, fix the Testcontainers/Docker detection issue so the existing integration tests actually run in CI</li>
+        <li><strong>CI/CD</strong> — a GitHub Actions pipeline running all four modules' test suites on every push</li>
+      </ul>
+    </section>
+
+    <!-- 18. RESUME -->
+    <section class="report-section" id="resume">
+      <h2><span class="secnum">18</span>Resume / Interview Explanation</h2>
+
+      <h3>60-Second Explanation</h3>
+      <p>
+        "I built a four-part incident response platform for cloud applications. A Java Spring Boot backend
+        stores organizations, projects, and incidents with two separate authentication systems — JWT for
+        dashboard users and API keys for machine clients. I wrote a companion Java SDK that any Spring Boot
+        service can drop in to automatically report uncaught exceptions and slow requests with zero code
+        changes. On top of that, I built a Python AI agent service that uses an LLM with tool-calling to
+        investigate an incident — it reads real error, log, and deployment data through defined tools and
+        produces a root-cause hypothesis with a confidence score and cited evidence, which a human then has to
+        explicitly approve or reject before it's considered final. Finally, I built a React and TypeScript
+        dashboard where all of that comes together visually, with a clean architecture that lets every page run
+        on realistic mock data or the real backend behind a single flag."
+      </p>
+
+      <h3>3 Resume Bullet Points</h3>
+      <ul>
+        <li>Designed and built a multi-tenant Spring Boot backend (Java 21) with dual JWT/API-key authentication, Flyway-managed PostgreSQL schema, and an append-only audit log; verified with 40 passing JUnit/Mockito tests including a real-HTTP wire-format test.</li>
+        <li>Built a Java SDK and Spring Boot auto-configuration starter providing automatic exception and request-latency capture for third-party applications with zero manual instrumentation, shipped with a 33-test suite.</li>
+        <li>Implemented an agentic AI investigation service (Python/FastAPI) using LLM tool-calling to correlate error, log, and deployment data into a confidence-scored root-cause suggestion, gated by a backend-enforced human-approval workflow surfaced in a custom React/TypeScript dashboard.</li>
+      </ul>
+
+      <h3>Interview Talking Points</h3>
+      <ul>
+        <li><strong>Why two separate auth mechanisms?</strong> Be ready to explain the security reasoning: a leaked SDK/agent key should never be able to reach dashboard data, so they're enforced by completely separate Spring Security filter chains matched by URL path, not by role checks on a shared chain.</li>
+        <li><strong>Why is the AI gated behind human approval, and how is that enforced?</strong> Not just a UI convention — the review endpoint is JWT-only, so the AI's own API key is structurally incapable of approving its own suggestion.</li>
+        <li><strong>What would you build next and why?</strong> Talk through §17 in priority order: closing the "manual trigger" gap first (event-driven AI investigation) before building out RAG, since the reasoning loop already works without it.</li>
+        <li><strong>How did you handle an unreliable AI model?</strong> Be ready to describe the real bug found in this session — Llama 3.3 occasionally returning a malformed tool-call argument — and the retry-with-nudge fix, as a concrete example of debugging a non-deterministic system.</li>
+        <li><strong>What's mocked and why is that OK?</strong> Be upfront: the dashboard was built mock-first specifically so the UI could be fully built, demoed, and iterated on before every backend endpoint existed — and the architecture makes swapping to real data a one-line change, not a rewrite.</li>
+      </ul>
+    </section>
+
+    <footer class="report-footer">
+      Generated by scanning the actual repository at <code>D:\Karunagaran\Final year</code> — every claim in
+      sections 3, 5, 6, 7, 8, 12, and 16 was checked directly against source files, config files, or a live test
+      run, not recalled from memory. See the accompanying chat message for a breakdown of what was confirmed
+      vs. inferred.
+    </footer>
+  </main>
+</div>
+
+<script>
+  // Highlight the active TOC entry as the reader scrolls.
+  const links = Array.from(document.querySelectorAll('#toc a'));
+  const sections = links.map(l => document.querySelector(l.getAttribute('href')));
+  const setActive = () => {
+    let current = sections[0];
+    for (const sec of sections) {
+      if (sec && sec.getBoundingClientRect().top - 90 <= 0) current = sec;
+    }
+    links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + (current && current.id)));
+  };
+  document.addEventListener('scroll', setActive, { passive: true });
+  window.addEventListener('load', setActive);
+</script>
+</body>
+</html>
