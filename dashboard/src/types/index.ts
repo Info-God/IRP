@@ -172,6 +172,7 @@ export interface DeploymentEventView {
 
 export interface RunbookView {
   id: string;
+  projectId: string;
   title: string;
   uploadedBy: string;
   version: number;

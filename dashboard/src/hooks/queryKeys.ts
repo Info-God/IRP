@@ -11,7 +11,7 @@ export const queryKeys = {
   allSuggestions: ["agent-suggestions", "all"] as const,
   auditLogs: (projectId: string | null, page: number) => ["audit-logs", projectId, page] as const,
   apiKeys: (projectId: string) => ["api-keys", projectId] as const,
-  runbooks: ["runbooks"] as const,
+  runbooks: (projectId: string) => ["runbooks", projectId] as const,
   automations: ["automations"] as const,
   integrations: ["integrations"] as const,
   signals: (service: string | null) => ["signals", service] as const,

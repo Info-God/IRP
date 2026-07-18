@@ -2,6 +2,9 @@ package com.irp.core.agent;
 
 import com.irp.core.agent.dto.AgentSuggestionResponse;
 import com.irp.core.agent.dto.CreateAgentSuggestionRequest;
+import com.irp.core.agent.runbook.RunbookService;
+import com.irp.core.agent.runbook.dto.RunbookChunkResponse;
+import com.irp.core.agent.runbook.dto.RunbookSearchRequest;
 import com.irp.core.common.web.PageResponse;
 import com.irp.core.incident.Incident;
 import com.irp.core.incident.IncidentService;
@@ -23,6 +26,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -39,6 +43,7 @@ public class AgentController {
     private final IngestionService ingestionService;
     private final IncidentService incidentService;
     private final AgentSuggestionService agentSuggestionService;
+    private final RunbookService runbookService;
 
     @GetMapping("/logs")
     public PageResponse<LogEventResponse> searchLogs(@AuthenticationPrincipal ApiKeyPrincipal principal,
@@ -93,5 +98,13 @@ public class AgentController {
         AgentSuggestion suggestion = agentSuggestionService.createSuggestion(
                 principal.organizationId(), principal.projectId(), incidentId, request);
         return AgentSuggestionResponse.from(suggestion);
+    }
+
+    @PostMapping("/runbooks/search")
+    public List<RunbookChunkResponse> searchRunbooks(@AuthenticationPrincipal ApiKeyPrincipal principal,
+                                                       @Valid @RequestBody RunbookSearchRequest request) {
+        return runbookService.search(principal.projectId(), request.query(), request.topKOrDefault()).stream()
+                .map(RunbookChunkResponse::from)
+                .toList();
     }
 }

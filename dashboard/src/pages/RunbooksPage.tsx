@@ -1,14 +1,19 @@
-import { AlertTriangle, BookOpen, FileText, Plus } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, FileText, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { UploadRunbookDialog } from "@/features/runbooks/UploadRunbookDialog";
 import { useRunbooks } from "@/hooks/useMisc";
+import { useProject } from "@/context/ProjectContext";
 import { formatDateTime } from "@/lib/formatters";
 
 export default function RunbooksPage() {
-  const { data: runbooks = [], isLoading } = useRunbooks();
+  const { currentProject } = useProject();
+  const { data: runbooks = [], isLoading } = useRunbooks(currentProject?.id);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   return (
     <div>
@@ -16,25 +21,16 @@ export default function RunbooksPage() {
         title="Runbooks / Knowledge Base"
         description="Documents the AI agent searches for remediation guidance during an investigation"
         action={
-          <Button variant="primary" disabled title="Upload requires the runbook ingestion backend (Phase 3 follow-up) - not built yet">
+          <Button variant="primary" onClick={() => setUploadOpen(true)} disabled={!currentProject}>
             <Plus className="h-4 w-4" /> Upload runbook
           </Button>
         }
       />
 
-      <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-none" />
-        <span>
-          Mock data. No upload/list endpoint exists in irp-core yet - the <code>runbooks</code> /{" "}
-          <code>runbook_chunks</code> tables (pgvector-backed) were laid down in the Phase 3 migration
-          but nothing writes to them yet. This page shows the intended UX.
-        </span>
-      </div>
-
       {isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : runbooks.length === 0 ? (
-        <EmptyState icon={BookOpen} title="No runbooks yet" />
+        <EmptyState icon={BookOpen} title="No runbooks yet" description="Upload one to give the AI agent remediation guidance to search during an investigation." />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {runbooks.map((runbook) => (
@@ -56,6 +52,10 @@ export default function RunbooksPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {currentProject && (
+        <UploadRunbookDialog open={uploadOpen} onClose={() => setUploadOpen(false)} projectId={currentProject.id} />
       )}
     </div>
   );

@@ -16,7 +16,11 @@ class IrpCoreClient:
         self._client = httpx.Client(
             base_url=settings.irp_core_base_url.rstrip("/"),
             headers={"X-API-Key": settings.irp_core_api_key},
-            timeout=10.0,
+            # 30s, not 10s: search_runbooks routes through irp-core, which calls back into
+            # this service's own /v1/embeddings to embed the query - CPU-bound sentence-
+            # transformers inference plus the round trip can take longer than the other,
+            # much cheaper agent endpoints this client also calls.
+            timeout=30.0,
         )
 
     def search_logs(self, service: str, level: str | None, from_time: str, to_time: str) -> list[dict[str, Any]]:
@@ -40,6 +44,11 @@ class IrpCoreClient:
 
     def post_suggestion(self, incident_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         response = self._client.post(f"/api/v1/agent/incidents/{incident_id}/suggestions", json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    def search_runbooks(self, query: str, top_k: int) -> list[dict[str, Any]]:
+        response = self._client.post("/api/v1/agent/runbooks/search", json={"query": query, "topK": top_k})
         response.raise_for_status()
         return response.json()
 

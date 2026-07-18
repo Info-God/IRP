@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/queryKeys";
 import { getMyOrganization } from "@/services/organizations";
-import { listRunbooks } from "@/services/runbooks";
+import { createRunbook, listRunbooks, type CreateRunbookPayload } from "@/services/runbooks";
 import { listAutomations } from "@/services/automations";
 import { listIntegrations } from "@/services/integrations";
 import { getRelatedSignals } from "@/services/signals";
@@ -10,8 +10,22 @@ export function useOrganization() {
   return useQuery({ queryKey: queryKeys.organization, queryFn: getMyOrganization });
 }
 
-export function useRunbooks() {
-  return useQuery({ queryKey: queryKeys.runbooks, queryFn: listRunbooks });
+export function useRunbooks(projectId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.runbooks(projectId ?? ""),
+    queryFn: () => listRunbooks(projectId!),
+    enabled: Boolean(projectId),
+  });
+}
+
+export function useCreateRunbook(projectId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateRunbookPayload) => createRunbook(projectId!, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.runbooks(projectId ?? "") });
+    },
+  });
 }
 
 export function useAutomations() {

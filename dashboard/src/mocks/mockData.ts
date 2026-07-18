@@ -463,10 +463,10 @@ export const mockApiKeys: Record<string, ApiKeyResponse[]> = {
 };
 
 export const mockRunbooks: RunbookView[] = [
-  { id: "rb-1", title: "Checkout Service Incident Playbook", uploadedBy: "ada@acme.dev", version: 3, chunkCount: 42, createdAt: daysAgo(60) },
-  { id: "rb-2", title: "Database Failover Procedure", uploadedBy: "ada@acme.dev", version: 1, chunkCount: 18, createdAt: daysAgo(45) },
-  { id: "rb-3", title: "Payment Gateway Troubleshooting Guide", uploadedBy: "ada@acme.dev", version: 2, chunkCount: 27, createdAt: daysAgo(30) },
-  { id: "rb-4", title: "On-call Escalation Policy", uploadedBy: "ada@acme.dev", version: 1, chunkCount: 9, createdAt: daysAgo(20) },
+  { id: "rb-1", projectId: "proj-checkout", title: "Checkout Service Incident Playbook", uploadedBy: "ada@acme.dev", version: 3, chunkCount: 42, createdAt: daysAgo(60) },
+  { id: "rb-2", projectId: "proj-checkout", title: "Database Failover Procedure", uploadedBy: "ada@acme.dev", version: 1, chunkCount: 18, createdAt: daysAgo(45) },
+  { id: "rb-3", projectId: "proj-checkout", title: "Payment Gateway Troubleshooting Guide", uploadedBy: "ada@acme.dev", version: 2, chunkCount: 27, createdAt: daysAgo(30) },
+  { id: "rb-4", projectId: "proj-checkout", title: "On-call Escalation Policy", uploadedBy: "ada@acme.dev", version: 1, chunkCount: 9, createdAt: daysAgo(20) },
 ];
 
 export const mockAutomations: AutomationRuleView[] = [

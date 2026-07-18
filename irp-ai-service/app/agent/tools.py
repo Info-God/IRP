@@ -137,7 +137,7 @@ class ToolExecutor:
             service=tool_input["service"], from_time=tool_input["from_time"], to_time=tool_input["to_time"])
 
     def _tool_search_runbooks(self, tool_input: dict[str, Any]) -> Any:
-        return search_runbooks(tool_input["query"], tool_input.get("top_k", 5))
+        return search_runbooks(self._core_client, tool_input["query"], tool_input.get("top_k", 5))
 
     def _tool_post_investigation_result(self, tool_input: dict[str, Any]) -> Any:
         return {"acknowledged": True}
