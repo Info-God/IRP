@@ -49,6 +49,9 @@ def run_investigation(settings: Settings, core_client: IrpCoreClient, incident_i
     client = Groq(api_key=settings.groq_api_key)
     groq_tools = _to_groq_tools()
 
+    run_id = core_client.start_agent_run(incident_id, settings.groq_model)
+    token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": build_system_prompt(incident)},
         {"role": "user", "content": build_task_prompt(incident)},
@@ -57,57 +60,69 @@ def run_investigation(settings: Settings, core_client: IrpCoreClient, incident_i
     final_result: InvestigationResult | None = None
     malformed_call_retries = 0
 
-    for _ in range(settings.max_tool_iterations):
-        try:
-            response = client.chat.completions.create(
-                model=settings.groq_model,
-                messages=messages,
-                tools=groq_tools,
-                tool_choice="auto",
-                max_tokens=4096,
-            )
-        except BadRequestError as exc:
-            # Open-weight tool calling isn't as reliable as Claude/GPT - Llama 3.3 on Groq
-            # occasionally emits an argument shape Groq's own schema check rejects (e.g. a
-            # list instead of an object) before it ever reaches our code. Nudge and retry a
-            # bounded number of times rather than letting one bad generation kill the run.
-            malformed_call_retries += 1
-            logger.warning("Groq rejected a malformed tool call (attempt %d): %s", malformed_call_retries, exc)
-            if malformed_call_retries > MAX_MALFORMED_CALL_RETRIES:
-                return InvestigationOutcome(
-                    result=None, steps=executor.steps,
-                    error=f"model produced malformed tool calls repeatedly: {exc}")
-            messages.append({
-                "role": "user",
-                "content": (
-                    "Your last tool call was rejected as malformed - the argument must be a single "
-                    "JSON object, never a list. Try again, calling exactly one tool at a time."
-                ),
-            })
-            continue
+    try:
+        for _ in range(settings.max_tool_iterations):
+            try:
+                response = client.chat.completions.create(
+                    model=settings.groq_model,
+                    messages=messages,
+                    tools=groq_tools,
+                    tool_choice="auto",
+                    max_tokens=4096,
+                )
+            except BadRequestError as exc:
+                # Open-weight tool calling isn't as reliable as Claude/GPT - Llama 3.3 on Groq
+                # occasionally emits an argument shape Groq's own schema check rejects (e.g. a
+                # list instead of an object) before it ever reaches our code. Nudge and retry a
+                # bounded number of times rather than letting one bad generation kill the run.
+                malformed_call_retries += 1
+                logger.warning("Groq rejected a malformed tool call (attempt %d): %s", malformed_call_retries, exc)
+                if malformed_call_retries > MAX_MALFORMED_CALL_RETRIES:
+                    return InvestigationOutcome(
+                        result=None, steps=executor.steps,
+                        error=f"model produced malformed tool calls repeatedly: {exc}")
+                messages.append({
+                    "role": "user",
+                    "content": (
+                        "Your last tool call was rejected as malformed - the argument must be a single "
+                        "JSON object, never a list. Try again, calling exactly one tool at a time."
+                    ),
+                })
+                continue
 
-        message = response.choices[0].message
-        messages.append(message.model_dump(exclude_none=True))
+            if response.usage:
+                token_usage["prompt_tokens"] += response.usage.prompt_tokens
+                token_usage["completion_tokens"] += response.usage.completion_tokens
+                token_usage["total_tokens"] += response.usage.total_tokens
 
-        if not message.tool_calls:
-            break
+            message = response.choices[0].message
+            messages.append(message.model_dump(exclude_none=True))
 
-        for tool_call in message.tool_calls:
-            tool_input = json.loads(tool_call.function.arguments)
-            output = executor.execute(tool_call.function.name, tool_input)
-            if tool_call.function.name == "post_investigation_result":
-                final_result = _validate_result(tool_input)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": json.dumps(output, default=str),
-            })
+            if not message.tool_calls:
+                break
 
-        if final_result is not None:
-            break
+            for tool_call in message.tool_calls:
+                tool_input = json.loads(tool_call.function.arguments)
+                output = executor.execute(tool_call.function.name, tool_input)
+                core_client.add_agent_step(run_id, tool_call.function.name, tool_input, output)
+                if tool_call.function.name == "post_investigation_result":
+                    final_result = _validate_result(tool_input)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": json.dumps(output, default=str),
+                })
 
-    error = None if final_result is not None else "agent did not produce a result within max_tool_iterations"
-    return InvestigationOutcome(result=final_result, steps=executor.steps, error=error)
+            if final_result is not None:
+                break
+
+        error = None if final_result is not None else "agent did not produce a result within max_tool_iterations"
+        return InvestigationOutcome(result=final_result, steps=executor.steps, error=error)
+    finally:
+        # Always closes out the run, even on an early return or an unexpected exception -
+        # otherwise a failed investigation leaves its agent_runs row stuck at RUNNING forever.
+        core_client.finish_agent_run(
+            run_id, "SUCCEEDED" if final_result is not None else "FAILED", token_usage)
 
 
 def _validate_result(raw: dict[str, Any]) -> InvestigationResult:

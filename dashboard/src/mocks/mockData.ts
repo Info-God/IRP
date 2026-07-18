@@ -1,4 +1,5 @@
 import type {
+  AgentRunDetailResponse,
   AgentSuggestionResponse,
   ApiKeyResponse,
   AuditLogResponse,
@@ -413,6 +414,61 @@ export function getMockSuggestions(incidentId: string): AgentSuggestionResponse[
 
 export function getAllMockSuggestions(): AgentSuggestionResponse[] {
   return Object.values(suggestionsByIncident).flat();
+}
+
+const agentRunsByIncident: Record<string, AgentRunDetailResponse[]> = {
+  "inc-1": [
+    {
+      run: {
+        id: "run-1",
+        incidentId: "inc-1",
+        projectId: "proj-checkout",
+        status: "SUCCEEDED",
+        model: "llama-3.3-70b-versatile",
+        tokenUsage: { prompt_tokens: 1840, completion_tokens: 412, total_tokens: 2252 },
+        startedAt: minutesAgo(24),
+        finishedAt: minutesAgo(23),
+      },
+      steps: [
+        {
+          id: "step-1",
+          stepIndex: 0,
+          toolName: "search_errors",
+          toolInput: { service: "checkout", from_time: minutesAgo(45), to_time: minutesAgo(15) },
+          toolOutput: [{ id: "err-101", exceptionType: "NullPointerException", message: "Cannot invoke CheckoutService.charge() because customer is null" }],
+          createdAt: minutesAgo(24),
+        },
+        {
+          id: "step-2",
+          stepIndex: 1,
+          toolName: "get_recent_deployments",
+          toolInput: { service: "checkout", from_time: minutesAgo(45), to_time: minutesAgo(15) },
+          toolOutput: [{ id: "dep-201", service: "checkout", version: "v1.4.0" }],
+          createdAt: minutesAgo(24),
+        },
+        {
+          id: "step-3",
+          stepIndex: 2,
+          toolName: "search_runbooks",
+          toolInput: { query: "checkout NullPointerException after deploy", top_k: 5 },
+          toolOutput: [],
+          createdAt: minutesAgo(23),
+        },
+        {
+          id: "step-4",
+          stepIndex: 3,
+          toolName: "post_investigation_result",
+          toolInput: { root_cause: "Missing null-check on customer context after v1.4.0", confidence: 0.86 },
+          toolOutput: { acknowledged: true },
+          createdAt: minutesAgo(23),
+        },
+      ],
+    },
+  ],
+};
+
+export function getMockAgentRuns(incidentId: string): AgentRunDetailResponse[] {
+  return agentRunsByIncident[incidentId] ?? [];
 }
 
 export function reviewMockSuggestion(

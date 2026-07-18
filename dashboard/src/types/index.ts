@@ -114,6 +114,33 @@ export interface AgentSuggestionResponse {
   createdAt: string;
 }
 
+export type AgentRunStatus = "RUNNING" | "SUCCEEDED" | "FAILED";
+
+export interface AgentRunResponse {
+  id: string;
+  incidentId: string;
+  projectId: string;
+  status: AgentRunStatus;
+  model: string | null;
+  tokenUsage: Record<string, number> | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface AgentStepResponse {
+  id: string;
+  stepIndex: number;
+  toolName: string;
+  toolInput: unknown;
+  toolOutput: unknown;
+  createdAt: string;
+}
+
+export interface AgentRunDetailResponse {
+  run: AgentRunResponse;
+  steps: AgentStepResponse[];
+}
+
 export interface AuditLogResponse {
   id: string;
   projectId: string | null;

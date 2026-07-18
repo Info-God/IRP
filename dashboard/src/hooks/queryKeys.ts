@@ -8,6 +8,8 @@ export const queryKeys = {
   incident: (projectId: string, incidentId: string) => ["incident", projectId, incidentId] as const,
   suggestions: (projectId: string, incidentId: string) =>
     ["agent-suggestions", projectId, incidentId] as const,
+  agentRuns: (projectId: string, incidentId: string) =>
+    ["agent-runs", projectId, incidentId] as const,
   allSuggestions: ["agent-suggestions", "all"] as const,
   auditLogs: (projectId: string | null, page: number) => ["audit-logs", projectId, page] as const,
   apiKeys: (projectId: string) => ["api-keys", projectId] as const,

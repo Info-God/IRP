@@ -1,7 +1,12 @@
 package com.irp.core.agent;
 
+import com.irp.core.agent.dto.AgentRunResponse;
+import com.irp.core.agent.dto.AgentStepResponse;
 import com.irp.core.agent.dto.AgentSuggestionResponse;
+import com.irp.core.agent.dto.CreateAgentStepRequest;
 import com.irp.core.agent.dto.CreateAgentSuggestionRequest;
+import com.irp.core.agent.dto.FinishAgentRunRequest;
+import com.irp.core.agent.dto.StartAgentRunRequest;
 import com.irp.core.agent.runbook.RunbookService;
 import com.irp.core.agent.runbook.dto.RunbookChunkResponse;
 import com.irp.core.agent.runbook.dto.RunbookSearchRequest;
@@ -43,6 +48,7 @@ public class AgentController {
     private final IngestionService ingestionService;
     private final IncidentService incidentService;
     private final AgentSuggestionService agentSuggestionService;
+    private final AgentRunService agentRunService;
     private final RunbookService runbookService;
 
     @GetMapping("/logs")
@@ -98,6 +104,29 @@ public class AgentController {
         AgentSuggestion suggestion = agentSuggestionService.createSuggestion(
                 principal.organizationId(), principal.projectId(), incidentId, request);
         return AgentSuggestionResponse.from(suggestion);
+    }
+
+    @PostMapping("/incidents/{incidentId}/runs")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AgentRunResponse startRun(@AuthenticationPrincipal ApiKeyPrincipal principal,
+                                      @PathVariable UUID incidentId,
+                                      @RequestBody StartAgentRunRequest request) {
+        return AgentRunResponse.from(agentRunService.startRun(principal.projectId(), incidentId, request.model()));
+    }
+
+    @PostMapping("/runs/{runId}/steps")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AgentStepResponse addStep(@AuthenticationPrincipal ApiKeyPrincipal principal,
+                                      @PathVariable UUID runId,
+                                      @Valid @RequestBody CreateAgentStepRequest request) {
+        return AgentStepResponse.from(agentRunService.addStep(principal.projectId(), runId, request));
+    }
+
+    @PatchMapping("/runs/{runId}")
+    public AgentRunResponse finishRun(@AuthenticationPrincipal ApiKeyPrincipal principal,
+                                       @PathVariable UUID runId,
+                                       @Valid @RequestBody FinishAgentRunRequest request) {
+        return AgentRunResponse.from(agentRunService.finishRun(principal.projectId(), runId, request));
     }
 
     @PostMapping("/runbooks/search")

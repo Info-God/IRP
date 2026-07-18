@@ -52,6 +52,23 @@ class IrpCoreClient:
         response.raise_for_status()
         return response.json()
 
+    def start_agent_run(self, incident_id: str, model: str) -> str:
+        response = self._client.post(f"/api/v1/agent/incidents/{incident_id}/runs", json={"model": model})
+        response.raise_for_status()
+        return response.json()["id"]
+
+    def add_agent_step(self, run_id: str, tool_name: str, tool_input: Any, tool_output: Any) -> None:
+        response = self._client.post(f"/api/v1/agent/runs/{run_id}/steps", json={
+            "toolName": tool_name, "toolInput": tool_input, "toolOutput": tool_output,
+        })
+        response.raise_for_status()
+
+    def finish_agent_run(self, run_id: str, status: str, token_usage: dict[str, Any]) -> None:
+        response = self._client.patch(f"/api/v1/agent/runs/{run_id}", json={
+            "status": status, "tokenUsage": token_usage,
+        })
+        response.raise_for_status()
+
     def _get_items(self, path: str, params: dict[str, Any]) -> list[dict[str, Any]]:
         response = self._client.get(path, params=params)
         response.raise_for_status()

@@ -8,6 +8,7 @@ import { SeverityBadge } from "@/features/incidents/SeverityBadge";
 import { StatusBadge } from "@/features/incidents/StatusBadge";
 import { IncidentTimeline } from "@/features/incident-detail/IncidentTimeline";
 import { AgentSuggestionPanel } from "@/features/incident-detail/AgentSuggestionPanel";
+import { AgentTraceTab } from "@/features/incident-detail/AgentTraceTab";
 import { RelatedSignalsTab } from "@/features/incident-detail/RelatedSignalsTab";
 import { useProject } from "@/context/ProjectContext";
 import { useIncident, useUpdateIncidentStatus } from "@/hooks/useIncidents";
@@ -86,6 +87,7 @@ export default function IncidentDetailPage() {
             { key: "overview", label: "Overview" },
             { key: "timeline", label: "Timeline", count: timeline.length },
             { key: "ai", label: "AI Suggestions" },
+            { key: "trace", label: "Agent Trace" },
             { key: "signals", label: "Related Signals" },
           ]}
           active={tab}
@@ -100,6 +102,9 @@ export default function IncidentDetailPage() {
           {tab === "timeline" && <IncidentTimeline entries={timeline} />}
           {tab === "ai" && currentProject && (
             <AgentSuggestionPanel projectId={currentProject.id} incidentId={incident.id} />
+          )}
+          {tab === "trace" && currentProject && (
+            <AgentTraceTab projectId={currentProject.id} incidentId={incident.id} />
           )}
           {tab === "signals" && <RelatedSignalsTab service={incident.service} />}
         </CardBody>
