@@ -10,12 +10,12 @@ export const queryKeys = {
     ["agent-suggestions", projectId, incidentId] as const,
   agentRuns: (projectId: string, incidentId: string) =>
     ["agent-runs", projectId, incidentId] as const,
-  allSuggestions: ["agent-suggestions", "all"] as const,
+  allSuggestions: (projectId: string) => ["agent-suggestions", "all", projectId] as const,
   auditLogs: (projectId: string | null, page: number) => ["audit-logs", projectId, page] as const,
   apiKeys: (projectId: string) => ["api-keys", projectId] as const,
   runbooks: (projectId: string) => ["runbooks", projectId] as const,
   automations: ["automations"] as const,
   integrations: ["integrations"] as const,
   slackIntegration: (projectId: string) => ["slack-integration", projectId] as const,
-  signals: (service: string | null) => ["signals", service] as const,
+  signals: (projectId: string, incidentId: string) => ["signals", projectId, incidentId] as const,
 };

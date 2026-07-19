@@ -106,7 +106,9 @@ export default function IncidentDetailPage() {
           {tab === "trace" && currentProject && (
             <AgentTraceTab projectId={currentProject.id} incidentId={incident.id} />
           )}
-          {tab === "signals" && <RelatedSignalsTab service={incident.service} />}
+          {tab === "signals" && currentProject && (
+            <RelatedSignalsTab projectId={currentProject.id} incidentId={incident.id} />
+          )}
         </CardBody>
       </Card>
     </div>

@@ -36,9 +36,10 @@ export function useIntegrations() {
   return useQuery({ queryKey: queryKeys.integrations, queryFn: listIntegrations });
 }
 
-export function useRelatedSignals(service: string | null) {
+export function useRelatedSignals(projectId: string | undefined, incidentId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.signals(service),
-    queryFn: () => getRelatedSignals(service),
+    queryKey: queryKeys.signals(projectId ?? "", incidentId ?? ""),
+    queryFn: () => getRelatedSignals(projectId!, incidentId!),
+    enabled: Boolean(projectId && incidentId),
   });
 }

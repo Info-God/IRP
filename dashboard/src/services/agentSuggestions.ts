@@ -32,13 +32,8 @@ export async function reviewSuggestion(
   );
 }
 
-/**
- * irp-core has no project-wide "list all suggestions" endpoint yet - only
- * per-incident listing exists (see Phase 4 design doc gap list). This
- * aggregates across mock incidents for the AI Copilot page; swap for a real
- * `GET /api/v1/projects/{id}/agent-suggestions?status=` once it's built.
- */
-export async function listAllSuggestions(): Promise<AgentSuggestionResponse[]> {
-  if (USE_MOCKS) return delay(getAllMockSuggestions());
-  throw new Error("listAllSuggestions has no backend endpoint yet - see Phase 4 design doc gap list");
+/** Every suggestion for a project, across all its incidents - backs the AI Copilot queue. */
+export async function listAllSuggestions(projectId: string): Promise<AgentSuggestionResponse[]> {
+  if (USE_MOCKS) return delay(getAllMockSuggestions().filter((s) => s.projectId === projectId));
+  return apiRequest<AgentSuggestionResponse[]>(`/api/v1/projects/${projectId}/agent-suggestions`);
 }

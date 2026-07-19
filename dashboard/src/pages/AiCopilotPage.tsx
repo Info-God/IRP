@@ -14,10 +14,9 @@ import { useAllAgentSuggestions, useReviewSuggestionAny } from "@/hooks/useAgent
 export default function AiCopilotPage() {
   const { currentProject } = useProject();
   const navigate = useNavigate();
-  const { data: allSuggestions = [], isLoading } = useAllAgentSuggestions();
+  const { data: suggestions = [], isLoading } = useAllAgentSuggestions(currentProject?.id);
   const review = useReviewSuggestionAny();
 
-  const suggestions = allSuggestions.filter((s) => s.projectId === currentProject?.id);
   const pending = suggestions.filter((s) => s.status === "PENDING_REVIEW");
   const reviewed = suggestions.filter((s) => s.status !== "PENDING_REVIEW");
   const approvedCount = reviewed.filter((s) => s.status === "APPROVED").length;

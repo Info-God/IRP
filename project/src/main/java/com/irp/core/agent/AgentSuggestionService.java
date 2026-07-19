@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -66,6 +67,17 @@ public class AgentSuggestionService {
         projectService.getProject(organizationId, projectId);
         getIncidentForProject(projectId, incidentId);
         return agentSuggestionRepository.findByIncidentIdOrderByCreatedAtDesc(incidentId);
+    }
+
+    /** Backs the AI Copilot page's project-wide queue - every prior page here paginated per
+     * incident; this is the first cross-incident suggestion read. */
+    @Transactional(readOnly = true)
+    public List<AgentSuggestion> listSuggestionsForProject(UUID organizationId, UUID projectId,
+                                                            Optional<AgentSuggestionStatus> status) {
+        projectService.getProject(organizationId, projectId);
+        return status
+                .map(s -> agentSuggestionRepository.findByProjectIdAndStatusOrderByCreatedAtDesc(projectId, s))
+                .orElseGet(() -> agentSuggestionRepository.findByProjectIdOrderByCreatedAtDesc(projectId));
     }
 
     @Transactional

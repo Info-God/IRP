@@ -10,10 +10,11 @@ export function useAgentSuggestions(projectId: string | undefined, incidentId: s
   });
 }
 
-export function useAllAgentSuggestions() {
+export function useAllAgentSuggestions(projectId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.allSuggestions,
-    queryFn: listAllSuggestions,
+    queryKey: queryKeys.allSuggestions(projectId ?? ""),
+    queryFn: () => listAllSuggestions(projectId!),
+    enabled: Boolean(projectId),
   });
 }
 
@@ -33,7 +34,7 @@ export function useReviewSuggestion(projectId: string | undefined, incidentId: s
       queryClient.invalidateQueries({ queryKey: queryKeys.suggestions(projectId ?? "", incidentId ?? "") });
       queryClient.invalidateQueries({ queryKey: queryKeys.incident(projectId ?? "", incidentId ?? "") });
       queryClient.invalidateQueries({ queryKey: ["incidents", projectId] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.allSuggestions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allSuggestions(projectId ?? "") });
     },
   });
 }
@@ -60,7 +61,7 @@ export function useReviewSuggestionAny() {
       queryClient.invalidateQueries({ queryKey: queryKeys.suggestions(variables.projectId, variables.incidentId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.incident(variables.projectId, variables.incidentId) });
       queryClient.invalidateQueries({ queryKey: ["incidents", variables.projectId] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.allSuggestions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.allSuggestions(variables.projectId) });
     },
   });
 }

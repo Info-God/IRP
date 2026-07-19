@@ -21,12 +21,11 @@ export default function DashboardPage() {
     page: 0,
     size: 100,
   });
-  const { data: allSuggestions = [] } = useAllAgentSuggestions();
+  const { data: projectSuggestions = [] } = useAllAgentSuggestions(currentProject?.id);
 
   const incidents = allIncidents?.items ?? [];
   const openIncidents = incidents.filter((i) => i.status !== "RESOLVED" && i.status !== "CLOSED");
   const awaitingApproval = incidents.filter((i) => i.status === "AWAITING_APPROVAL");
-  const projectSuggestions = allSuggestions.filter((s) => s.projectId === currentProject?.id);
   const approved = projectSuggestions.filter((s) => s.status === "APPROVED");
   const avgApprovedConfidence =
     approved.length > 0 ? approved.reduce((sum, s) => sum + s.confidence, 0) / approved.length : null;

@@ -1,23 +1,13 @@
-import { AlertTriangle } from "lucide-react";
 import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useRelatedSignals } from "@/hooks/useMisc";
 import { formatDateTime } from "@/lib/formatters";
 
-export function RelatedSignalsTab({ service }: { service: string | null }) {
-  const { data, isLoading } = useRelatedSignals(service);
+export function RelatedSignalsTab({ projectId, incidentId }: { projectId: string; incidentId: string }) {
+  const { data, isLoading } = useRelatedSignals(projectId, incidentId);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-none" />
-        <span>
-          Mock data. irp-core has no dashboard-facing read endpoint for logs/errors/deployments yet
-          (only the AI agent's API-key-authenticated endpoints exist) - see the Phase 4 design doc gap
-          list.
-        </span>
-      </div>
-
       {isLoading ? (
         <Skeleton className="h-48 w-full" />
       ) : (

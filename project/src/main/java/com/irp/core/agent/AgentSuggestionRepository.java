@@ -11,4 +11,8 @@ public interface AgentSuggestionRepository extends JpaRepository<AgentSuggestion
     Optional<AgentSuggestion> findByIdAndProjectId(UUID id, UUID projectId);
 
     List<AgentSuggestion> findByIncidentIdOrderByCreatedAtDesc(UUID incidentId);
+
+    List<AgentSuggestion> findByProjectIdOrderByCreatedAtDesc(UUID projectId);
+
+    List<AgentSuggestion> findByProjectIdAndStatusOrderByCreatedAtDesc(UUID projectId, AgentSuggestionStatus status);
 }
