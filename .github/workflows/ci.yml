@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (project/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: project/pom.xml
+      # Testcontainers needs Docker, which ubuntu-latest runners already have -
+      # unlike local dev in some sandboxed environments, IrpCoreApplicationTests,
+      # EndToEndFlowIT, and TenantIsolationIT all run for real here.
+      - name: Run tests
+        working-directory: project
+        run: ./mvnw --batch-mode test
+
+  sdk:
+    name: Java SDK (incident-sdk/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: incident-sdk/pom.xml
+      - name: Run tests (3-module reactor)
+        working-directory: incident-sdk
+        run: ./mvnw --batch-mode test
+
+  ai-service:
+    name: AI Service (irp-ai-service/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: irp-ai-service/requirements.txt
+      - name: Install dependencies
+        working-directory: irp-ai-service
+        run: pip install -r requirements.txt
+      # Every test mocks the Groq client, irp-core's HTTP API, and the embedding
+      # model, so this needs no live services, no GROQ_API_KEY, and never
+      # downloads the actual sentence-transformers model.
+      - name: Run tests
+        working-directory: irp-ai-service
+        run: pytest -v
+
+  dashboard:
+    name: Dashboard (dashboard/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
+      # No unit test runner is configured yet - build runs tsc -b first, so this
+      # is the real type-checking + build-correctness gate for now.
+      - name: Typecheck + build
+        working-directory: dashboard
+        run: npm run build
