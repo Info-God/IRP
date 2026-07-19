@@ -1,7 +1,11 @@
-# IRP Console — Phase 4 React Dashboard
+# IRP Console — React Dashboard
 
 Frontend for the Agentic AI Incident Response Platform. Runs fully on mock data out of the
-box — no backend required to demo it.
+box — no backend required to demo it. Incidents, Incident Detail (Overview/Timeline/AI
+Suggestions/Agent Trace/Related Signals), Runbooks, AI Copilot, Audit Logs, API Keys, and
+the Slack integration card all call the real backend when `VITE_USE_MOCKS=false`.
+Automations and the non-Slack integration cards are still UI-only mock (no backend model
+exists for those yet) and say so in the UI.
 
 ## Run it
 
@@ -45,8 +49,10 @@ src/
     charts/          IncidentTrendChart, SeverityDonut, ConfidenceHistogram (Recharts)
   features/
     incidents/        IncidentTable, IncidentFilters, CreateIncidentDialog, SeverityBadge, StatusBadge
-    incident-detail/  IncidentTimeline, AgentSuggestionPanel, RelatedSignalsTab
+    incident-detail/  IncidentTimeline, AgentSuggestionPanel, AgentTraceTab, RelatedSignalsTab
     agent/             RiskBadge
+    runbooks/          UploadRunbookDialog
+    integrations/      SlackIntegrationCard (the one real integration card)
   pages/             one component per route
   App.tsx            routes
   main.tsx           providers (QueryClient, Router, Auth, Project)
