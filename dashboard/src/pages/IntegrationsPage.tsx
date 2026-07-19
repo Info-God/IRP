@@ -1,20 +1,22 @@
-import { AlertTriangle, Github, MessageSquare, Radio, Webhook } from "lucide-react";
+import { AlertTriangle, Github, Radio, Webhook } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { SlackIntegrationCard } from "@/features/integrations/SlackIntegrationCard";
 import { useIntegrations } from "@/hooks/useMisc";
+import { useProject } from "@/context/ProjectContext";
 import type { IntegrationView } from "@/types";
 
 const iconByType: Record<IntegrationView["icon"], typeof Github> = {
-  slack: MessageSquare,
   pagerduty: Radio,
   github: Github,
   webhook: Webhook,
 };
 
 export default function IntegrationsPage() {
+  const { currentProject } = useProject();
   const { data: integrations = [], isLoading } = useIntegrations();
 
   return (
@@ -24,16 +26,22 @@ export default function IntegrationsPage() {
       <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-none" />
         <span>
-          Mock data. No OAuth/webhook configuration storage exists in irp-core yet - this catalog shows
-          the intended UX for a future phase.
+          Slack is fully wired up below - the rest of this catalog (PagerDuty, GitHub, generic webhooks) is
+          still mock data showing the intended UX for a future phase.
         </span>
       </div>
 
-      {isLoading ? (
-        <Skeleton className="h-48 w-full" />
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {integrations.map((integration) => {
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {currentProject && <SlackIntegrationCard projectId={currentProject.id} />}
+
+        {isLoading ? (
+          <>
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </>
+        ) : (
+          integrations.map((integration) => {
             const Icon = iconByType[integration.icon];
             return (
               <Card key={integration.id}>
@@ -54,9 +62,9 @@ export default function IntegrationsPage() {
                 </CardBody>
               </Card>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }

@@ -531,8 +531,8 @@ export const mockAutomations: AutomationRuleView[] = [
   { id: "auto-3", name: "Page on-call for stale approvals", condition: "status = AWAITING_APPROVAL for > 30 minutes", action: "Trigger PagerDuty escalation", enabled: true, lastTriggeredAt: hoursAgo(9) },
 ];
 
+/** Slack has its own real card (SlackIntegrationCard) - not in this mock catalog. */
 export const mockIntegrations: IntegrationView[] = [
-  { id: "int-slack", name: "Slack", description: "Post incident and AI suggestion updates to a Slack channel.", connected: true, icon: "slack" },
   { id: "int-pagerduty", name: "PagerDuty", description: "Trigger on-call escalations for critical incidents.", connected: false, icon: "pagerduty" },
   { id: "int-github", name: "GitHub", description: "Link incidents to commits, PRs, and deploys.", connected: true, icon: "github" },
   { id: "int-webhook", name: "Generic Webhook", description: "Send incident events to any HTTPS endpoint.", connected: false, icon: "webhook" },

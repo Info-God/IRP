@@ -16,5 +16,6 @@ export const queryKeys = {
   runbooks: (projectId: string) => ["runbooks", projectId] as const,
   automations: ["automations"] as const,
   integrations: ["integrations"] as const,
+  slackIntegration: (projectId: string) => ["slack-integration", projectId] as const,
   signals: (service: string | null) => ["signals", service] as const,
 };

@@ -13,6 +13,7 @@ import com.irp.core.incident.IncidentTimelineEntryRepository;
 import com.irp.core.incident.TimelineEntryType;
 import com.irp.core.tenancy.project.ProjectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class AgentSuggestionService {
     private final IncidentTimelineEntryRepository timelineEntryRepository;
     private final ProjectService projectService;
     private final AuditService auditService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Called from the agent-facing controller, where projectId/organizationId already come
@@ -93,6 +95,11 @@ public class AgentSuggestionService {
 
         auditService.record(organizationId, projectId, actor, "AGENT_SUGGESTION_REVIEWED", "Incident",
                 incidentId.toString(), Map.of("suggestionId", suggestionId.toString(), "decision", decision.name()));
+
+        if (decision == AgentSuggestionStatus.APPROVED) {
+            eventPublisher.publishEvent(new AgentSuggestionApprovedEvent(
+                    incidentId, projectId, organizationId, incident.getTitle(), suggestion.getRootCause(), actor));
+        }
 
         return suggestion;
     }

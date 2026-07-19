@@ -221,5 +221,13 @@ export interface IntegrationView {
   name: string;
   description: string;
   connected: boolean;
-  icon: "slack" | "pagerduty" | "github" | "webhook";
+  icon: "pagerduty" | "github" | "webhook";
+}
+
+export interface SlackIntegrationResponse {
+  id: string;
+  maskedWebhookUrl: string;
+  connectedBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
