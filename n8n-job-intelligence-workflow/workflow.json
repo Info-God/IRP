@@ -1,0 +1,322 @@
+{
+  "name": "Internship & Job Intelligence Workflow",
+  "nodes": [
+    {
+      "id": "trigger_schedule",
+      "name": "Schedule - Every 6h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-1300, 40],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 6 }]
+        }
+      }
+    },
+    {
+      "id": "code_rss_list",
+      "name": "RSS Feed List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1060, -140],
+      "parameters": {
+        "jsCode": "// EDIT ME: add/remove RSS feeds you want polled.\n// Verify each URL still serves RSS before relying on it -- job boards change this over time.\n// LinkedIn/Naukri/Indeed no longer expose public RSS; use the email-alert branch or a job-search\n// API (JSearch on RapidAPI, Adzuna API) to cover those instead.\nconst feeds = [\n  { url: 'https://weworkremotely.com/remote-jobs.rss', source: 'WeWorkRemotely' },\n  { url: 'https://weworkremotely.com/categories/remote-programming-jobs.rss', source: 'WeWorkRemotely-Programming' },\n  { url: 'https://remoteok.com/remote-dev-jobs.rss', source: 'RemoteOK' }\n];\nreturn feeds.map(f => ({ json: f }));"
+      }
+    },
+    {
+      "id": "rss_read",
+      "name": "Fetch RSS Feeds",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.1,
+      "position": [-860, -140],
+      "parameters": {
+        "url": "={{$json.url}}",
+        "options": {}
+      }
+    },
+    {
+      "id": "code_normalize_rss",
+      "name": "Normalize RSS Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-660, -140],
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const j = item.json;\n  let host = '';\n  try { host = new URL(j.link).hostname.replace('www.', ''); } catch (e) {}\n  return {\n    json: {\n      title: j.title || '',\n      company: '',\n      location: '',\n      url: j.link || j.guid || '',\n      description: j.contentSnippet || j.content || '',\n      source: host || 'RSS',\n      postedDate: j.pubDate || j.isoDate || ''\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "code_career_list",
+      "name": "Career Page List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1060, 40],
+      "parameters": {
+        "jsCode": "// EDIT ME: one entry per company careers page you want watched.\n// Inspect the page's HTML (DevTools) to find real selectors -- these are placeholders.\n// titleSelector/linkSelector/locationSelector should each match ALL job cards on the page\n// so the resulting arrays line up positionally (same order, same count).\nconst pages = [\n  {\n    company: 'Example Corp',\n    url: 'https://example.com/careers',\n    titleSelector: '.job-listing .job-title',\n    linkSelector: '.job-listing a',\n    locationSelector: '.job-listing .job-location'\n  }\n];\nreturn pages.map(p => ({ json: p }));"
+      }
+    },
+    {
+      "id": "http_career_fetch",
+      "name": "Fetch Career Page HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-860, 40],
+      "parameters": {
+        "url": "={{$json.url}}",
+        "options": {
+          "response": { "response": { "responseFormat": "text" } }
+        }
+      }
+    },
+    {
+      "id": "html_extract_career",
+      "name": "Extract Career Page Jobs",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [-660, 40],
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "sourceData": "json",
+        "dataPropertyName": "data",
+        "extractionValues": {
+          "values": [
+            { "key": "titles", "cssSelector": "={{$json.titleSelector}}", "returnArray": true },
+            { "key": "links", "cssSelector": "={{$json.linkSelector}}", "returnValue": "attribute", "attribute": "href", "returnArray": true },
+            { "key": "locations", "cssSelector": "={{$json.locationSelector}}", "returnArray": true }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "code_normalize_career",
+      "name": "Normalize Career Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-460, 40],
+      "parameters": {
+        "jsCode": "const out = [];\nfor (const item of items) {\n  const j = item.json;\n  const titles = j.titles || [];\n  const links = j.links || [];\n  const locations = j.locations || [];\n  for (let i = 0; i < titles.length; i++) {\n    out.push({\n      json: {\n        title: titles[i] || '',\n        company: j.company || '',\n        location: locations[i] || '',\n        url: links[i] || '',\n        description: '',\n        source: j.company || 'CareerPage',\n        postedDate: ''\n      }\n    });\n  }\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "trigger_email",
+      "name": "Email - Job Alerts (IMAP)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [-1300, 260],
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "read",
+        "options": {}
+      },
+      "credentials": {
+        "imap": { "id": "", "name": "Job Alerts IMAP" }
+      }
+    },
+    {
+      "id": "code_normalize_email",
+      "name": "Normalize Email Jobs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1060, 260],
+      "parameters": {
+        "jsCode": "// Lightweight parser for job-alert emails (LinkedIn/Indeed/Naukri digest style).\n// Tune the regexes below to match the actual emails you receive.\nconst out = [];\nfor (const item of items) {\n  const j = item.json;\n  const from = (j.from || (j.headers && j.headers.from) || '').toLowerCase();\n  const subject = j.subject || '';\n  const isJobAlert = /linkedin|indeed|naukri|job alert|jobs? for you/i.test(from + ' ' + subject);\n  if (!isJobAlert) continue;\n  const body = j.textPlain || j.text || j.html || '';\n  const linkRegex = /(https?:\\/\\/[^\\s\"<>]+)/g;\n  const links = [...new Set(body.match(linkRegex) || [])].filter(l => /job|career|jd\\//i.test(l));\n  for (const link of links) {\n    out.push({ json: { title: subject, company: '', location: '', url: link, description: '', source: 'EmailAlert', postedDate: j.date || '' } });\n  }\n}\nreturn out;"
+      }
+    },
+    {
+      "id": "merge_sources",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [-260, 60],
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 3
+      }
+    },
+    {
+      "id": "dedupe",
+      "name": "Remove Already-Seen Jobs",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [-60, 60],
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "compare": "selectedFields",
+        "fieldsToCompare": {
+          "values": [{ "field": "url" }]
+        }
+      }
+    },
+    {
+      "id": "code_keyword_filter",
+      "name": "Keyword/Skill Pre-Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [140, 60],
+      "parameters": {
+        "jsCode": "// EDIT ME to match what you're looking for. This cheap pass runs BEFORE the paid/rate-limited\n// AI call, so keep it loose enough not to miss things but tight enough to save AI credits.\nconst mustMatchAny = ['python', 'java', 'react', 'node', 'sql', 'data analyst', 'machine learning', 'intern', 'internship', 'software engineer'];\nconst excludeIfAny = ['senior', 'staff', '10+ years', 'unpaid'];\nconst preferredLocations = ['remote', 'bangalore', 'chennai', 'hyderabad', 'india'];\n\nreturn items.filter(item => {\n  const text = `${item.json.title} ${item.json.description}`.toLowerCase();\n  const loc = (item.json.location || '').toLowerCase();\n  const hasMatch = mustMatchAny.some(k => text.includes(k));\n  const hasExclude = excludeIfAny.some(k => text.includes(k));\n  const locOk = preferredLocations.length === 0 || loc === '' || preferredLocations.some(l => loc.includes(l));\n  return hasMatch && !hasExclude && locOk;\n});"
+      }
+    },
+    {
+      "id": "http_ai_score",
+      "name": "AI Score (Groq - Free)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [340, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{$env.GROQ_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"llama-3.3-70b-versatile\", temperature: 0.2, response_format: { type: \"json_object\" }, messages: [ { role: \"system\", content: \"You score how well a job/internship listing matches a candidate profile. EDIT THE PROFILE BELOW to describe yourself: skills, target role, experience level, location preference. Respond with ONLY a JSON object: {\\\"match_score\\\": 0-100, \\\"matched_skills\\\": [], \\\"missing_skills\\\": [], \\\"reasoning\\\": \\\"one sentence\\\"}. PROFILE: Final-year CS student skilled in Java, Spring Boot, React, Python, SQL, basic ML, looking for software engineering / data / AI internships or entry-level roles, open to remote or India-based.\" }, { role: \"user\", content: `Job title: ${$json.title}\\nCompany: ${$json.company}\\nLocation: ${$json.location}\\nDescription: ${$json.description}` } ] }) }}"
+      }
+    },
+    {
+      "id": "code_parse_ai",
+      "name": "Parse AI Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 60],
+      "parameters": {
+        "jsCode": "return items.map((item, i) => {\n  const job = $items('Keyword/Skill Pre-Filter')[i].json;\n  let score = 0, matched = [], missing = [], reasoning = '';\n  try {\n    const content = item.json.choices[0].message.content;\n    const parsed = JSON.parse(content);\n    score = parsed.match_score || 0;\n    matched = parsed.matched_skills || [];\n    missing = parsed.missing_skills || [];\n    reasoning = parsed.reasoning || '';\n  } catch (e) {\n    reasoning = 'AI parse failed: ' + e.message;\n  }\n  return { json: { ...job, match_score: score, matched_skills: matched, missing_skills: missing, reasoning } };\n});"
+      }
+    },
+    {
+      "id": "sheets_log",
+      "name": "Log All Scored Jobs",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [740, 60],
+      "parameters": {
+        "operation": "append",
+        "documentId": { "mode": "id", "value": "YOUR_GOOGLE_SHEET_ID" },
+        "sheetName": { "mode": "name", "value": "JobLog" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{$json.title}}",
+            "company": "={{$json.company}}",
+            "location": "={{$json.location}}",
+            "url": "={{$json.url}}",
+            "source": "={{$json.source}}",
+            "match_score": "={{$json.match_score}}",
+            "matched_skills": "={{$json.matched_skills.join(', ')}}",
+            "reasoning": "={{$json.reasoning}}",
+            "date_found": "={{$now.toISO()}}"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": { "id": "", "name": "Google Sheets account" }
+      }
+    },
+    {
+      "id": "if_shortlist",
+      "name": "Shortlist Filter (score >= 70)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [940, 60],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{$json.match_score}}",
+              "rightValue": 70,
+              "operator": { "type": "number", "operation": "gte" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "http_telegram",
+      "name": "Send Telegram Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1140, 20],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{$env.TELEGRAM_BOT_TOKEN}}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ chat_id: $env.TELEGRAM_CHAT_ID, parse_mode: \"Markdown\", text: `*${$json.match_score}% match* — ${$json.title}\\n${$json.company}${$json.location ? ' · ' + $json.location : ''}\\n${$json.reasoning}\\n${$json.url}` }) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule - Every 6h": {
+      "main": [
+        [
+          { "node": "RSS Feed List", "type": "main", "index": 0 },
+          { "node": "Career Page List", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "RSS Feed List": {
+      "main": [[{ "node": "Fetch RSS Feeds", "type": "main", "index": 0 }]]
+    },
+    "Fetch RSS Feeds": {
+      "main": [[{ "node": "Normalize RSS Jobs", "type": "main", "index": 0 }]]
+    },
+    "Normalize RSS Jobs": {
+      "main": [[{ "node": "Merge All Sources", "type": "main", "index": 0 }]]
+    },
+    "Career Page List": {
+      "main": [[{ "node": "Fetch Career Page HTML", "type": "main", "index": 0 }]]
+    },
+    "Fetch Career Page HTML": {
+      "main": [[{ "node": "Extract Career Page Jobs", "type": "main", "index": 0 }]]
+    },
+    "Extract Career Page Jobs": {
+      "main": [[{ "node": "Normalize Career Jobs", "type": "main", "index": 0 }]]
+    },
+    "Normalize Career Jobs": {
+      "main": [[{ "node": "Merge All Sources", "type": "main", "index": 1 }]]
+    },
+    "Email - Job Alerts (IMAP)": {
+      "main": [[{ "node": "Normalize Email Jobs", "type": "main", "index": 0 }]]
+    },
+    "Normalize Email Jobs": {
+      "main": [[{ "node": "Merge All Sources", "type": "main", "index": 2 }]]
+    },
+    "Merge All Sources": {
+      "main": [[{ "node": "Remove Already-Seen Jobs", "type": "main", "index": 0 }]]
+    },
+    "Remove Already-Seen Jobs": {
+      "main": [[{ "node": "Keyword/Skill Pre-Filter", "type": "main", "index": 0 }]]
+    },
+    "Keyword/Skill Pre-Filter": {
+      "main": [[{ "node": "AI Score (Groq - Free)", "type": "main", "index": 0 }]]
+    },
+    "AI Score (Groq - Free)": {
+      "main": [[{ "node": "Parse AI Score", "type": "main", "index": 0 }]]
+    },
+    "Parse AI Score": {
+      "main": [[{ "node": "Log All Scored Jobs", "type": "main", "index": 0 }]]
+    },
+    "Log All Scored Jobs": {
+      "main": [[{ "node": "Shortlist Filter (score >= 70)", "type": "main", "index": 0 }]]
+    },
+    "Shortlist Filter (score >= 70)": {
+      "main": [
+        [{ "node": "Send Telegram Alert", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

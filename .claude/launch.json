@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "dashboard", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "contract-analyzer-frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:/sanjay/smart-contract-risk-analyzer/frontend", "run", "dev", "--", "--port", "5174"],
+      "port": 5174
     }
   ]
 }
