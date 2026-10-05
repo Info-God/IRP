@@ -2,7 +2,11 @@
 target/
 dist/
 build/
+out/
 *.class
+*.war
+*.ear
+*.hprof
 
 # Java / Maven
 project/tools/
@@ -15,10 +19,15 @@ project/tools/
 .venv/
 *.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
 
 # Node
 node_modules/
 *.tsbuildinfo
+.npm/
 
 # Env / secrets
 .env
@@ -31,6 +40,17 @@ node_modules/
 *.iml
 .DS_Store
 Thumbs.db
+.claude/*.lock
+~$*
 
 # Logs
 *.log
+logs/
+
+# Caches and temporary files
+.cache/
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak

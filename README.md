@@ -1,210 +1,263 @@
 # Agentic AI Incident Response Platform
 
-A four-part platform for finding out *why* something broke in production, faster — an AI
-agent does the first pass of investigation over real telemetry, and a human approves or
-rejects its reasoning before anything is considered final.
+An incident investigation platform for collecting application telemetry, grouping related
+failures, using an AI agent to investigate incidents, and requiring human approval before an
+AI suggestion is accepted. This repository contains the incident platform, its Java SDK, and
+a separate n8n job-intelligence workflow.
 
-```
-Your app + incident-sdk  →  irp-core (backend)  →  irp-ai-service (AI agent)  →  Groq (LLM)
-                                    ↕                        ↓
-                              dashboard (React)          Slack (on approval)
-```
+> **Implementation status:** The incident platform is implemented as four independently
+> runnable modules. The dashboard starts in mock mode by default. Slack is the implemented
+> notification integration; the other integration cards and Automations page are UI-only.
+> The n8n workflow is a separate, optional project and is not connected to the incident
+> platform.
 
-## What it does
-
-1. An app with the **Java SDK** installed reports errors and slow requests automatically —
-   zero manual instrumentation.
-2. **irp-core** stores everything, tenant-isolated, with an append-only audit trail. Enough
-   repeated errors with the same stack hash auto-open an incident on their own.
-3. The moment an incident exists, **irp-ai-service** investigates it automatically — it
-   calls tools to pull recent errors/logs/deployments, semantically searches uploaded
-   runbooks, and proposes a root cause with a confidence score and cited evidence. Every
-   tool call it makes is recorded, not just its final answer.
-4. A human reviews the AI's reasoning in the **dashboard** and explicitly approves or
-   rejects it — enforced server-side, not just in the UI: the AI's own API key is
-   structurally incapable of approving its own suggestion. An approval can notify Slack.
-
-## Architecture
+## Architecture at a glance
 
 ```mermaid
 flowchart LR
-    SDK["Your app<br/>+ incident-sdk"]
-    Browser(("Dashboard<br/>user"))
-
-    subgraph Core["irp-core — Spring Boot :8080"]
-        direction TB
-        Ingest["Ingestion API<br/>(API key)"]
-        Dash["Dashboard API<br/>(JWT)"]
-        Agent["Agent API<br/>(API key)"]
-        Alert["AlertGroupingJob<br/>(scheduled)"]
-    end
-
-    DB[("Postgres 16<br/>+ pgvector")]
-    AIS["irp-ai-service<br/>FastAPI :8000"]
-    Groq[["Groq<br/>Llama 3.3 70B"]]
-    Slack[["Slack<br/>incoming webhook"]]
-    UI["dashboard<br/>React :5173"]
-
-    SDK -->|"logs / errors / deployments"| Ingest
-    Browser --> UI
-    UI -->|JWT| Dash
-
-    Ingest --> DB
-    Dash --> DB
-    Agent --> DB
-    Alert -->|scans recent errors| DB
-    Alert -->|opens incident| Dash
-
-    Dash -. "IncidentCreatedEvent<br/>(async, after commit)" .-> AIS
-    AIS -->|"search errors/logs/deployments,<br/>search_runbooks, post suggestion,<br/>report agent_runs/steps"| Agent
-    AIS --> Groq
-
-    Dash -. "AgentSuggestionApprovedEvent<br/>(async, after commit)" .-> Slack
+    App["Instrumented application"] --> SDK["incident-sdk"]
+    SDK -->|"X-API-Key / HTTP"| Core["project\nSpring Boot :8080"]
+    UI["dashboard\nReact/Vite :5173"] -->|"JWT / HTTP"| Core
+    Core --> DB[("PostgreSQL 16\n+ pgvector")]
+    Core -->|"after-commit event\nX-Internal-Token"| AI["irp-ai-service\nFastAPI :8000"]
+    AI -->|"Groq API"| LLM["Groq LLM"]
+    AI -->|"X-API-Key\n/api/v1/agent/*"| Core
+    Core -->|"after approval"| Slack["Slack webhook"]
 ```
 
-The dotted arrows are Spring `ApplicationEvent`s published after a transaction commits and
-handled `@Async` — the pattern used everywhere something needs to react to an action without
-that action depending on the reaction succeeding. A down AI service can never block or fail
-incident creation; an unreachable Slack webhook can never fail an approval.
+The Spring Boot application is the system of record. The AI service has no direct database
+connection: it reads telemetry and writes agent runs, steps, and suggestions through the
+backend's authenticated agent API. See [`docs/architecture.md`](docs/architecture.md) for
+the detailed request, data, security, and deployment flows.
 
-## Modules
+## Repository structure
 
-| Module | Stack | What it is |
-|---|---|---|
-| [`project/`](project/README.md) | Java 21, Spring Boot 3.3, Postgres/pgvector | System of record: auth, tenancy, ingestion, incidents, audit log, AI agent storage, Slack, alert grouping |
-| [`incident-sdk/`](incident-sdk/README.md) | Java 21, zero-Spring core + Spring Boot starter | Drop-in dependency for any Spring Boot app: automatic exception + latency capture |
-| [`irp-ai-service/`](irp-ai-service/README.md) | Python, FastAPI, Groq, sentence-transformers | The agent: tool-calling investigation loop + local embeddings for RAG |
-| [`dashboard/`](dashboard/README.md) | React 18, TypeScript, Vite, Tailwind | Where a human reviews an incident and the AI's reasoning |
-
-## What's real vs. mock
-
-Real, backend-verified, end-to-end: registration/auth, multi-tenant projects, API keys,
-ingestion, incidents (manual and auto-created), the full AI investigation loop including
-RAG-backed runbook citations, the agent execution trace, human approval (server-enforced),
-audit logs, Related Signals, the project-wide AI Copilot queue, and the Slack integration.
-
-Still UI-only mock, and labeled as such in the UI: **Automations** (no rules engine exists)
-and the **PagerDuty / GitHub / generic-webhook** integration cards (Slack is the one real
-one — see Phase 8 below).
-
-## Quick start
-
-Each module's own README has the full detail; this is the fast path to a working system.
-
-```bash
-# 1. Database
-cd project && docker compose up -d
-
-# 2. Backend (Flyway migrates on boot)
-./mvnw spring-boot:run
-
-# 3. AI service (new terminal)
-cd ../irp-ai-service
-pip install -r requirements.txt
-cp .env.example .env   # fill in GROQ_API_KEY (free at console.groq.com/keys)
-uvicorn app.main:app --reload --port 8000
-
-# 4. Dashboard (new terminal)
-cd ../dashboard
-npm install
-npm run dev   # http://localhost:5173, mock data by default
-```
-
-To point the dashboard at the real backend instead of mock data, copy `dashboard/.env.example`
-to `.env` and set `VITE_USE_MOCKS=false`.
-
-## Demo script (~2 minutes)
-
-1. **Register + create a project** — `curl` examples in [`project/README.md`](project/README.md#example-requests).
-   Issue an API key for the project.
-2. **Upload a runbook** from the dashboard's Runbooks page (or `PUT .../runbooks`) describing
-   a fix for a specific error, e.g. *"NullPointerException in checkout → missing null-check
-   after a deploy, roll back or add a guard."*
-3. **Send a matching error** through the API key (`POST /api/v1/ingest/errors`) — a
-   `NullPointerException` in `checkout`, plus a recent deployment via `POST .../deployments`.
-4. **Create an incident** referencing that error (or send ≥5 identical errors within 10
-   minutes with `ALERT_GROUPING_ENABLED=true` and watch one get created automatically).
-5. **Watch it investigate itself** — no manual trigger. Within a few seconds the incident
-   moves to `AWAITING_APPROVAL` with a root cause, a confidence score, and evidence that
-   **cites the runbook you uploaded**, not just the raw error.
-6. **Open the incident in the dashboard** → **Agent Trace tab**: every tool call the agent
-   made, in order, with its real input and output — not just the final answer.
-7. **Approve the suggestion**. If a Slack webhook is connected (Integrations page), a
-   notification posts automatically.
-8. **Check the Audit Log page** — every step above left a row: who, what, when.
-
-## Testing & CI
-
-```bash
-cd project && ./mvnw test          # 7 unit tests always run; 3 Testcontainers-backed
-                                    # integration tests need Docker (works on most machines
-                                    # and on GitHub Actions; see project/README.md)
-cd incident-sdk && ./mvnw test     # 33 tests, including a real (non-mocked) HTTP wire-format test
-cd irp-ai-service && pytest -v     # 34 tests, everything mocked, ~6s, no API keys needed
-cd dashboard && npm run build      # typecheck + production build
-```
-
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs all four in parallel on every
-push and PR.
-
-## Tech stack
-
-| Category | Technologies |
+| Path | Purpose |
 |---|---|
-| Backend | Java 21, Spring Boot 3.3, Spring Security, Spring Data JPA, Flyway |
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, Recharts |
-| Database | PostgreSQL 16 + pgvector (HNSW index for runbook search) |
-| AI | Groq (Llama 3.3 70B, tool calling), sentence-transformers (local embeddings, free) |
-| SDK | Plain Java 21 core (zero Spring dependency) + Spring Boot auto-configuration |
-| Testing | JUnit 5, Mockito, AssertJ, Testcontainers, pytest, respx |
-| CI/CD | GitHub Actions (4 parallel jobs) |
+| [`project/`](project/) | Spring Boot backend: authentication, tenancy, ingestion, incidents, audit, runbooks, agent APIs, and Slack |
+| [`incident-sdk/`](incident-sdk/) | Three-module Java 21 SDK, Spring Boot starter, and demo application |
+| [`irp-ai-service/`](irp-ai-service/) | FastAPI investigation worker/API, Groq tool-calling loop, guardrails, and local embeddings |
+| [`dashboard/`](dashboard/) | React 18 + TypeScript + Vite human-review dashboard |
+| [`n8n-job-intelligence-workflow/`](n8n-job-intelligence-workflow/) | Separate n8n workflow for job discovery, scoring, Google Sheets logging, and Telegram alerts |
+| [`docs/`](docs/) | Architecture and system documentation |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Parallel CI jobs for backend, SDK, AI service, and dashboard |
 
-## Interview talking points
+Generated dependencies and build outputs are intentionally not part of the project structure:
+`node_modules/`, `.venv/`, Maven `target/`, dashboard `dist/`, caches, and local environment
+files are ignored by [`.gitignore`](.gitignore).
 
-**"Walk me through the architecture."** Four independently-runnable services talking only
-over HTTP, the way they would if built by four different teams: a Spring Boot system of
-record, a Java SDK that removes ingestion friction, a Python AI agent that reasons over
-real data with tool calling, and a React dashboard that's the human checkpoint.
+## Main capabilities
 
-**"What makes the AI part 'agentic' rather than just an LLM call?"** It decides which tools
-to call and in what order (search errors → check deployments → search runbooks → post a
-result), grounds its confidence in retrieved evidence (a guardrail caps confidence to 0.3
-if it can't cite anything), and every one of those tool calls is persisted and visible in
-the dashboard's Agent Trace tab — not just the final answer.
+- Organization and project tenancy.
+- JWT authentication for dashboard users.
+- Project-scoped API keys for SDK ingestion and AI-service access.
+- Batch ingestion of logs and errors, plus deployment events.
+- Manual incidents and optional repeated-error alert grouping.
+- Flyway-managed PostgreSQL schema with an append-only audit log.
+- Runbook upload and semantic search using local `all-MiniLM-L6-v2` embeddings and pgvector.
+- AI investigation with tool calls for searching errors, logs, deployments, and runbooks.
+- Persisted agent runs and tool steps for traceability.
+- Human approval or rejection of AI suggestions, enforced by the backend.
+- Optional Slack notification after an approved suggestion.
 
-**"How do you know the human-approval gate is real, not just a UI convention?"** The
-review endpoint is JWT-only. The AI service authenticates with an API key. Those are two
-separate Spring Security filter chains matched by path — the AI's own credentials are
-structurally incapable of hitting the approval endpoint, regardless of what the UI does.
+## Technology choices
 
-**"What's the most interesting bug you hit building this?"** A Hibernate-buffered-insert
-ordering bug: uploading a runbook inserted its chunks via raw JDBC (no ORM mapping exists
-for a `vector(384)` column), but Hibernate hadn't flushed the parent row yet, so the first
-upload failed a foreign-key check that should have been impossible. Fixed with
-`saveAndFlush`. A close second: a Windows Application-Control policy silently blocking
-PyTorch's DLL load mid-session — a reminder that "works locally" and "works in this
-environment" aren't the same claim.
+| Area | Technology | Role |
+|---|---|---|
+| Backend | Java 21, Spring Boot 3.3 | REST API, domain services, security, scheduled alert grouping |
+| Persistence | PostgreSQL 16, Spring Data JPA, Flyway | System-of-record data and versioned schema migrations |
+| Vector search | pgvector with an HNSW index | Similarity search over runbook chunks |
+| AI service | Python, FastAPI, httpx | Asynchronous investigation endpoint and backend client |
+| Language model | Groq API with configurable Llama model | Tool-calling reasoning for incident investigations |
+| Embeddings | sentence-transformers `all-MiniLM-L6-v2` | Local 384-dimensional runbook/query embeddings |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS | Incident dashboard and human review experience |
+| SDK | Java 21, JDK HTTP client, Spring Boot auto-configuration | Non-invasive telemetry capture and delivery |
+| Testing | JUnit 5, Mockito, Testcontainers, pytest, respx | Unit, integration, and HTTP-client testing |
+| Automation | GitHub Actions | CI for the four incident-platform modules |
 
-**"What would you build next?"** Real OAuth-based integrations beyond Slack (PagerDuty,
-GitHub), a real automation-rules engine (the Automations page's actual missing backend),
-and role-based authorization — the JWT already carries `OWNER`/`ADMIN`/`MEMBER`, but
-nothing checks it yet, so every user in an org can currently do everything any other user
-can.
+## Prerequisites
 
-## Enhancement history
+- Java 21
+- Docker Desktop (required for local PostgreSQL; also required by backend Testcontainers tests)
+- Python compatible with the AI service requirements (CI uses Python 3.14)
+- Node.js 20 and npm
+- A Groq API key for live AI investigations
 
-This started as a working four-phase prototype (see each module's own README for that
-original scope) and went through ten further phases, each independently committed and
-verified live against a running instance, not just unit-tested in isolation:
+## Local setup
 
-1. Event-driven auto-trigger — incidents auto-investigate on creation, no manual call
-2. Real RAG pipeline — local embeddings + pgvector search, replacing a stub that always
-   returned nothing
-3. Agent execution trace — every tool call persisted and shown in the dashboard
-4. Responsive mobile navigation
-5. Alert grouping — repeated errors auto-open one incident, not five
-6. Tenant isolation & validation hardening — found and fixed a real cross-org data leak
-7. AI service test suite (34 tests) + GitHub Actions CI across all four modules
-8. Real Slack integration — the one working integration, not a mock card
-9. Backend-real Related Signals + AI Copilot queue — the last two mock-data banners removed
-10. This document
+### 1. Start PostgreSQL
+
+The only containerized runtime component currently provided by the repository is PostgreSQL
+with pgvector:
+
+```bash
+cd project
+docker compose up -d
+```
+
+The database is exposed on `localhost:5432` with the local development defaults in
+[`project/docker-compose.yml`](project/docker-compose.yml). Do not use those defaults outside
+local development.
+
+### 2. Run the Spring Boot backend
+
+Flyway applies migrations V1 through V9 on startup. JPA validates the migrated schema rather
+than creating it.
+
+```bash
+cd project
+./mvnw spring-boot:run
+```
+
+The API listens on `http://localhost:8080` by default. Backend settings are documented in
+[`project/src/main/resources/application.yml`](project/src/main/resources/application.yml),
+including `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`,
+`AI_SERVICE_BASE_URL`, `AI_SERVICE_INTERNAL_TOKEN`, and alert-grouping settings.
+Replace development secrets before sharing or deploying the application.
+
+### 3. Run the AI service
+
+```bash
+cd irp-ai-service
+python -m venv .venv
+# Activate .venv using the command for your shell.
+pip install -r requirements.txt
+copy .env.example .env        # Windows
+# cp .env.example .env        # macOS/Linux
+uvicorn app.main:app --reload --port 8000
+```
+
+Set `IRP_CORE_API_KEY`, `INTERNAL_TOKEN`, and `GROQ_API_KEY` in
+[`irp-ai-service/.env.example`](irp-ai-service/.env.example). The API exposes `/health`,
+`POST /v1/investigations`, and `POST /v1/embeddings`. The embedding model must be available
+to the local sentence-transformers cache when the service starts.
+
+### 4. Run the dashboard
+
+```bash
+cd dashboard
+npm install
+copy .env.example .env        # Windows
+# cp .env.example .env        # macOS/Linux
+npm run dev
+```
+
+Open `http://localhost:5173`. The dashboard uses mock data unless
+`VITE_USE_MOCKS=false` is set. For backend-backed operation, use:
+
+```dotenv
+VITE_API_BASE_URL=http://localhost:8080
+VITE_USE_MOCKS=false
+```
+
+The dashboard stores the JWT in browser local storage and sends it as a Bearer token in real
+API mode.
+
+## First API flow
+
+Register a user, create a project, and issue a project API key through the backend. Then use
+the key for SDK-style telemetry ingestion:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d "{\"organizationName\":\"Acme\",\"fullName\":\"Ada Lovelace\",\"email\":\"ada@example.com\",\"password\":\"change-this-password\"}"
+
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"ada@example.com\",\"password\":\"change-this-password\"}"
+```
+
+Use the returned `accessToken` as `TOKEN` to create a project and API key:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/projects \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"checkout-service","environment":"production"}'
+
+curl -X POST http://localhost:8080/api/v1/projects/$PROJECT_ID/api-keys \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"checkout-production"}'
+```
+
+Send telemetry with the plaintext key returned once by the API:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/ingest/errors \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"events":[{"occurredAt":"2026-10-05T10:00:00Z","service":"checkout","message":"Example failure","stackHash":"demo-hash"}]}'
+```
+
+The relevant API groups are:
+
+- `/api/v1/auth/*` — registration and login.
+- `/api/v1/projects/*` — projects, API keys, incidents, runbooks, agent traces, signals, and Slack.
+- `/api/v1/ingest/*` — SDK/application telemetry.
+- `/api/v1/agent/*` — AI-service telemetry search and persistence API.
+- `/api/v1/audit-logs` — authenticated audit history.
+
+The backend API is the source of truth for request schemas. The module README files contain
+additional examples: [`project/README.md`](project/README.md) and
+[`incident-sdk/README.md`](incident-sdk/README.md).
+
+## Java SDK
+
+Build the three-module reactor:
+
+```bash
+cd incident-sdk
+./mvnw clean install
+```
+
+The SDK core is Spring-independent; the starter adds automatic exception and latency
+capture for Spring Boot applications; the demo app provides local endpoints for exercising
+the integration. Configure the starter with the `incident.*` properties described in
+[`incident-sdk/README.md`](incident-sdk/README.md), including a real project API key.
+
+## Testing and CI
+
+```bash
+cd project && ./mvnw test
+cd incident-sdk && ./mvnw test
+cd irp-ai-service && pytest -v
+cd dashboard && npm run build
+```
+
+Backend integration tests use Testcontainers and therefore need Docker. AI-service tests mock
+Groq, backend HTTP calls, and model loading. The dashboard has no unit-test runner; its build
+performs TypeScript checking and the Vite production build. GitHub Actions runs these four
+checks in parallel on pushes and pull requests. The n8n workflow is not covered by CI.
+
+## Security and operational boundaries
+
+- Dashboard routes use stateless JWT authentication with BCrypt password hashing.
+- Ingestion and agent routes use project-scoped API keys; keys are hashed and revocable.
+- The separate AI service is authenticated by an internal token when the backend starts an
+  investigation, then uses an API key for backend agent routes.
+- Organization/project scoping is enforced in backend services.
+- Suggestions cannot be approved with the AI service's API-key authentication path; approval
+  is a dashboard-user operation.
+- Spring Actuator exposes health and info endpoints; application logging is configured at
+  INFO/DEBUG levels.
+- There is no refresh-token flow, fine-grained role enforcement, rate limiting, distributed
+  tracing, Kubernetes manifest, or production deployment configuration in this repository.
+
+These are implementation boundaries, not guarantees for a production deployment. Recommended
+future work includes secret management, role-based permissions, rate limiting, centralized
+observability, durable background-job delivery, and deployment manifests.
+
+## Separate n8n workflow
+
+[`n8n-job-intelligence-workflow/`](n8n-job-intelligence-workflow/) is a standalone self-hosted
+n8n workflow. It polls RSS feeds and career pages, optionally reads job-alert email, scores
+jobs with Groq, writes to Google Sheets, and sends Telegram alerts. It has its own credentials
+and setup instructions and is not part of the incident-platform runtime.
+
+## License and academic use
+
+No license file is currently present. Add an explicit license before distributing the
+repository publicly. The code and documentation are suitable as a final-year engineering
+project demonstration; verify third-party dependency and API terms before production use.
