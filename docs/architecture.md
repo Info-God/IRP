@@ -13,9 +13,6 @@ The incident platform has four independently runnable modules:
 4. **`incident-sdk/`** — Java SDK, Spring Boot starter, and demo application used by
    instrumented applications.
 
-`n8n-job-intelligence-workflow/` is a separate automation project. It is not called by, and
-does not call, the incident platform.
-
 ## High-level architecture
 
 ```mermaid
@@ -169,8 +166,6 @@ flowchart TB
 - **Groq:** configurable model endpoint used by the AI investigation loop.
 - **sentence-transformers:** local `all-MiniLM-L6-v2` model for embeddings.
 - **Slack:** optional project webhook notification after approval.
-- **n8n / Google Sheets / Telegram / IMAP / RSS:** used only by the separate job-intelligence
-  workflow, not by `irp-core`.
 
 ## Local deployment architecture
 

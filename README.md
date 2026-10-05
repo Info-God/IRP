@@ -2,14 +2,11 @@
 
 An incident investigation platform for collecting application telemetry, grouping related
 failures, using an AI agent to investigate incidents, and requiring human approval before an
-AI suggestion is accepted. This repository contains the incident platform, its Java SDK, and
-a separate n8n job-intelligence workflow.
+AI suggestion is accepted.
 
-> **Implementation status:** The incident platform is implemented as four independently
-> runnable modules. The dashboard starts in mock mode by default. Slack is the implemented
+> **Implementation status:** The platform is implemented as four independently runnable
+> modules. The dashboard starts in mock mode by default. Slack is the implemented
 > notification integration; the other integration cards and Automations page are UI-only.
-> The n8n workflow is a separate, optional project and is not connected to the incident
-> platform.
 
 ## Architecture at a glance
 
@@ -38,7 +35,6 @@ the detailed request, data, security, and deployment flows.
 | [`incident-sdk/`](incident-sdk/) | Three-module Java 21 SDK, Spring Boot starter, and demo application |
 | [`irp-ai-service/`](irp-ai-service/) | FastAPI investigation worker/API, Groq tool-calling loop, guardrails, and local embeddings |
 | [`dashboard/`](dashboard/) | React 18 + TypeScript + Vite human-review dashboard |
-| [`n8n-job-intelligence-workflow/`](n8n-job-intelligence-workflow/) | Separate n8n workflow for job discovery, scoring, Google Sheets logging, and Telegram alerts |
 | [`docs/`](docs/) | Architecture and system documentation |
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Parallel CI jobs for backend, SDK, AI service, and dashboard |
 
@@ -229,7 +225,7 @@ cd dashboard && npm run build
 Backend integration tests use Testcontainers and therefore need Docker. AI-service tests mock
 Groq, backend HTTP calls, and model loading. The dashboard has no unit-test runner; its build
 performs TypeScript checking and the Vite production build. GitHub Actions runs these four
-checks in parallel on pushes and pull requests. The n8n workflow is not covered by CI.
+checks in parallel on pushes and pull requests.
 
 ## Security and operational boundaries
 
@@ -248,13 +244,6 @@ checks in parallel on pushes and pull requests. The n8n workflow is not covered 
 These are implementation boundaries, not guarantees for a production deployment. Recommended
 future work includes secret management, role-based permissions, rate limiting, centralized
 observability, durable background-job delivery, and deployment manifests.
-
-## Separate n8n workflow
-
-[`n8n-job-intelligence-workflow/`](n8n-job-intelligence-workflow/) is a standalone self-hosted
-n8n workflow. It polls RSS feeds and career pages, optionally reads job-alert email, scores
-jobs with Groq, writes to Google Sheets, and sends Telegram alerts. It has its own credentials
-and setup instructions and is not part of the incident-platform runtime.
 
 ## License and academic use
 
